@@ -1,7 +1,10 @@
 const katex = require('katex')
 const beautify = require('js-beautify')
 const lodash = require('lodash')
+const { Decimal } = require('decimal.js')
 const Operators = require('./operators')
+const SupportedSymbols = require('./supported-symbols')
+const is = require('./is')
 
 class FuncInfo {
   constructor () {
@@ -17,59 +20,6 @@ class FuncInfo {
       func: null,
       code: ''
     })
-  }
-
-  addInfo (item, prevItem, depth) {
-    // 機能追加時に以下のログを有効にし確認する
-    // console.info(`--------\ndepth: ${depth}\n`, this.args, '\n', this.executions[0], '\n', item)
-
-    let additionalInfo = {
-      suffix: ''
-    }
-
-    // 乗算の省略がなされていた場合、乗算コードを追加する
-    if (this.isSkipMultiplier(item, prevItem)) {
-      this.addCode('*')
-    }
-
-    // type ごとに関数コードを生成ロジックを用意する
-    if (item.type === 'textord') {
-      this.addCode(item.text)
-    }
-
-    if (item.type === 'mathord') {
-      this.addArg(item.text)
-      this.addCode(item.text)
-    }
-
-    if (item.type === 'atom') {
-      this.addAtomInfo(item)
-    }
-
-    if (item.type === 'supsub') {
-      additionalInfo.suffix = this.addSubsupInfo(item, depth)
-    }
-
-    if (item.type === 'genfrac') {
-      this.addCode('(')
-      this.setParsedKatexData(item.numer.body, depth + 1)
-      this.addCode(')/')
-      this.addCode('(')
-      this.setParsedKatexData(item.denom.body, depth + 1)
-      this.addCode(')')
-    }
-
-    if (item.type === 'sqrt') {
-      this.addCode('Math.sqrt(')
-      this.setParsedKatexData(item.body.body, depth + 1) // type is ordgroup
-      this.addCode(')')
-    }
-
-    if (item.type === 'styling') {
-      this.setParsedKatexData(item.body, depth + 1)
-    }
-
-    return additionalInfo
   }
 
   addArg (variable) {
@@ -123,44 +73,9 @@ class FuncInfo {
   }
 
   setFuncCode () {
-    // 開発時最終確認
-    // console.info(
-    //   '-------------- generate func code --------------\n',
-    //   `latex: ${latex}\n`,
-    //   'args: ', this.args, '\n',
-    //   'code: ', this.getFuncStr()
-    // )
-
     // eslint-disable-next-line no-new-func
     this.func = new Function(...this.args, this.getFuncStr())
     this.code = beautify(this.func.toString())
-  }
-
-  isArithmetic (item) {
-    if (item.type === 'atom' && item.text === '+') return true
-    if (item.type === 'atom' && item.text === '-') return true
-    if (item.type === 'atom' && item.text === '*') return true
-    if (item.type === 'atom' && item.text === '\\times') return true
-    if (item.type === 'atom' && item.text === '\\div') return true
-    if (item.type === 'atom' && item.text === '±') return true
-    if (item.type === 'atom' && item.text === '\\pm') return true
-    if (item.type === 'textord' && item.text === '/') return true
-
-    return false
-  }
-
-  isSigmaSum (item) {
-    if (!item.base) return false
-
-    return item.base.type === 'op' && item.base.name === '\\sum'
-  }
-
-  isIntegrate (item) {
-    return item.base.type === 'op' && item.base.name === '\\int'
-  }
-
-  isNumericValue (item) {
-    return item.type === 'textord'
   }
 
   // 乗算の省略がなされているか - 例 2xy
@@ -169,20 +84,82 @@ class FuncInfo {
 
     // 2連続数値扱いのデータが来た場合
     const isContinuousNumericalItem =
-      this.isNumericValue(currentItem) && this.isNumericValue(prevItem)
+      is.numericValue(currentItem) && is.numericValue(prevItem)
     if (isContinuousNumericalItem) return false
 
-    if (this.isSigmaSum(prevItem)) return false
+    if (is.sigma(prevItem)) return false
 
     // `(` で始まっているか、 `)` で終わっている場合
-    if (prevItem.family === 'open' || currentItem.family === 'close') {
-      return false
-    }
+    if (is.open(prevItem) || is.close(currentItem)) return false
 
-    const isCurrentArithmetic = this.isArithmetic(currentItem)
-    const isPrevArithmetic = this.isArithmetic(prevItem)
+    const isCurrentArithmetic = is.arithmetic(currentItem)
+    const isPrevArithmetic = is.arithmetic(prevItem)
 
     return !isCurrentArithmetic && !isPrevArithmetic
+  }
+
+  addInfo (index, items, depth) {
+    const item = items[index]
+    const prevItem = items[index - 1]
+
+    // 機能追加時に以下のログを有効にし確認する
+    // console.info(
+    //   `--------\n`,
+    //   `depth: ${depth}\n`,
+    //   `args: ${this.args}\n\n`,
+    //   `executions: ${this.executions[0]}\n\n`,
+    //   item
+    // )
+
+    let additionalInfo = {
+      skipCount: 0
+    }
+
+    // 乗算の省略がなされていた場合、乗算コードを追加する
+    if (this.isSkipMultiplier(item, prevItem)) {
+      this.addCode('*')
+    }
+
+    // type ごとに関数コードを生成ロジックを用意する
+    if (item.type === 'textord') {
+      this.addCode(item.text)
+    }
+
+    if (item.type === 'mathord') {
+      this.addArg(item.text)
+      this.addCode(item.text)
+    }
+
+    if (item.type === 'atom') {
+      this.addAtomInfo(item)
+    }
+
+    if (item.type === 'supsub') {
+      const skipCount = this.addSubsupInfo(item, items, depth)
+
+      if (skipCount) additionalInfo.skipCount += skipCount
+    }
+
+    if (item.type === 'genfrac') {
+      this.addCode('(')
+      this.setKatexData(item.numer.body, depth + 1)
+      this.addCode(')/')
+      this.addCode('(')
+      this.setKatexData(item.denom.body, depth + 1)
+      this.addCode(')')
+    }
+
+    if (item.type === 'sqrt') {
+      this.addCode('Math.sqrt(')
+      this.setKatexData(item.body.body, depth + 1) // type is ordgroup
+      this.addCode(')')
+    }
+
+    if (item.type === 'styling') {
+      this.setKatexData(item.body, depth + 1)
+    }
+
+    return additionalInfo
   }
 
   addAtomInfo (item) {
@@ -206,7 +183,68 @@ class FuncInfo {
     this.addCode(operator)
   }
 
-  addSubsupInfo (item, depth) {
+  getRelatedFormula (
+    currentItem,
+    items,
+    option = {
+      delta: true
+    }
+  ) {
+    const firstIndex = items.indexOf(currentItem) + 1
+    const relatedItems = []
+    const status = {
+      firstParentheses: false,
+      parenthesesCount: 0
+    }
+    let deltaVarName = ''
+    let relatedItemLength = 0
+
+    function isEnd () {
+      if (status.firstParentheses && status.parenthesesCount === 0) return true
+
+      return false
+    }
+
+    for (let index = firstIndex; index < items.length; index++) {
+      const prevItem = items[index - 1]
+      const item = items[index]
+      const nextItem = items[index + 1]
+
+      if (index === firstIndex && is.open(item)) {
+        status.firstParentheses = true
+      }
+
+      if (is.open(item)) {
+        ++status.parenthesesCount
+      }
+
+      if (prevItem && is.close(prevItem)) {
+        --status.parenthesesCount
+      }
+
+      if (option.delta && is.delta(item)) {
+        deltaVarName = nextItem.text
+        relatedItemLength += 2
+
+        break
+      }
+
+      if (isEnd()) {
+        break
+      }
+
+      relatedItems.push(item)
+      ++relatedItemLength
+    }
+
+    return {
+      relatedItems,
+      relatedItemLength,
+      deltaVarName
+    }
+  }
+
+  addSubsupInfo (item, items, depth) {
     // 3^4 等の累乗
     if (item.base.type === 'textord') {
       const code = `Math.pow(${item.base.text}, ${item.sup.text})`
@@ -222,41 +260,65 @@ class FuncInfo {
       this.addCode(code)
     }
 
-    if (this.isIntegrate(item)) {
+    // 積分
+    if (item.base.type === 'op' && item.base.name === '\\int') {
+      const deltaDivisionNum = 100
+      const beginningValue = item.sub.text - 0
+      const endValue = item.sup.text - 0
+      const decimal = new Decimal(endValue)
+        .minus(beginningValue)
+        .div(deltaDivisionNum)
+      const deltaWidth = decimal.toNumber()
+
+      const {
+        relatedItems,
+        relatedItemLength,
+        deltaVarName
+      } = this.getRelatedFormula(item, items, { delta: true })
+
+      const varName = deltaVarName || 'x'
+
+      const prefixCode = `Array.from(
+        {length: ${deltaDivisionNum}},
+        (_, __i) => ${beginningValue} + ${deltaWidth} * __i
+      ).reduce((__sum${depth}, ${varName}) => __sum${depth} + ${deltaWidth} * `
+
+      const suffixCode = `, 0)`
+
+      this.setIgnoredVar(varName)
+      this.addCode(prefixCode)
+      this.setKatexData(relatedItems, depth + 1)
+      this.addCode(suffixCode)
+
+      return relatedItemLength
     }
 
-    if (this.isSigmaSum(item)) {
+    // 合計値,Σ
+    if (item.base.type === 'op' && item.base.name === '\\sum') {
       const beginningVar = item.sub.body[0].text
       const beginningValue = item.sub.body[2].text
       const endVar = item.sup.text
       const prefixCode = `Array.from(
         { length: (${endVar} + 1) - ${beginningValue} },
         (_, ${beginningVar}) => ${beginningVar} + ${beginningValue}
-      ).reduce((__sum, i) => __sum + `
+      ).reduce((__sum${depth}, i) => __sum${depth} + `
       const suffixCode = `, 0)`
+      const { relatedItems } = this.getRelatedFormula(item, items)
 
       this.setIgnoredVar(beginningVar)
       this.addArg(endVar)
       this.addCode(prefixCode)
+      this.setKatexData(relatedItems, depth + 1)
+      this.addCode(suffixCode)
 
-      return suffixCode
+      return relatedItems.length
     }
   }
 
-  setParsedKatexData (parsed, depth = 0) {
-    let suffix = ''
-
-    parsed.forEach((item, i) => {
-      const prevItem = parsed[i - 1]
-      const additionalInfo = this.addInfo(item, prevItem, depth)
-
-      if (additionalInfo.suffix) {
-        suffix += additionalInfo.suffix
-      }
-    })
-
-    if (suffix) {
-      this.addCode(suffix)
+  setKatexData (items, depth = 0) {
+    for (let index = 0; index < items.length; index++) {
+      const additionalInfo = this.addInfo(index, items, depth)
+      index += additionalInfo.skipCount
     }
   }
 
@@ -264,11 +326,14 @@ class FuncInfo {
     // 参考URL: https://github.com/KaTeX/KaTeX/issues/554
     // 正式なparserが出たらそっちに移行する。
     this.latex = latex
-    const parsed = katex.__parse(latex)
+    const items = katex.__parse(latex)
 
-    this.setParsedKatexData(parsed)
+    this.setKatexData(items)
     this.setFuncCode()
   }
 }
 
-module.exports = FuncInfo
+module.exports = {
+  FuncInfo,
+  SupportedSymbols
+}
