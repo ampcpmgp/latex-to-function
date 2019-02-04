@@ -19,9 +19,18 @@ class FuncInfo {
     })
   }
 
-  addInfo (item, prevItem, depth) {
+  addInfo (index, items, depth) {
+    const item = items[index]
+    const prevItem = items[index - 1]
+
     // 機能追加時に以下のログを有効にし確認する
-    // console.info(`--------\ndepth: ${depth}\n`, this.args, '\n', this.executions[0], '\n', item)
+    console.info(
+      `--------\n`,
+      `depth: ${depth}\n`,
+      `args: ${this.args}\n\n`,
+      `executions: ${this.executions[0]}\n\n`,
+      item
+    )
 
     let additionalInfo = {
       suffix: ''
@@ -52,21 +61,21 @@ class FuncInfo {
 
     if (item.type === 'genfrac') {
       this.addCode('(')
-      this.setParsedKatexData(item.numer.body, depth + 1)
+      this.setKatexData(item.numer.body, depth + 1)
       this.addCode(')/')
       this.addCode('(')
-      this.setParsedKatexData(item.denom.body, depth + 1)
+      this.setKatexData(item.denom.body, depth + 1)
       this.addCode(')')
     }
 
     if (item.type === 'sqrt') {
       this.addCode('Math.sqrt(')
-      this.setParsedKatexData(item.body.body, depth + 1) // type is ordgroup
+      this.setKatexData(item.body.body, depth + 1) // type is ordgroup
       this.addCode(')')
     }
 
     if (item.type === 'styling') {
-      this.setParsedKatexData(item.body, depth + 1)
+      this.setKatexData(item.body, depth + 1)
     }
 
     return additionalInfo
@@ -123,14 +132,6 @@ class FuncInfo {
   }
 
   setFuncCode () {
-    // 開発時最終確認
-    // console.info(
-    //   '-------------- generate func code --------------\n',
-    //   `latex: ${latex}\n`,
-    //   'args: ', this.args, '\n',
-    //   'code: ', this.getFuncStr()
-    // )
-
     // eslint-disable-next-line no-new-func
     this.func = new Function(...this.args, this.getFuncStr())
     this.code = beautify(this.func.toString())
@@ -150,13 +151,11 @@ class FuncInfo {
   }
 
   isSigmaSum (item) {
-    if (!item.base) return false
-
-    return item.base.type === 'op' && item.base.name === '\\sum'
-  }
-
-  isIntegrate (item) {
-    return item.base.type === 'op' && item.base.name === '\\int'
+    return (
+      item.type === 'supsub' &&
+      item.base.type === 'op' &&
+      item.base.name === '\\sum'
+    )
   }
 
   isNumericValue (item) {
@@ -222,17 +221,29 @@ class FuncInfo {
       this.addCode(code)
     }
 
-    if (this.isIntegrate(item)) {
+    // 積分
+    if (item.base.type === 'op' && item.base.name === '\\int') {
+      const delta = 100
+      const prefixCode = `Array.from(
+        {length: ${delta}},
+        (_, __i) => (${item.sup.text} - ${item.sub.text}) / ${delta} * __i
+      ).reduce(__width${depth} => __width${depth} *`
+      const suffixCode = `, 0)`
+
+      this.addCode(prefixCode)
+
+      return suffixCode
     }
 
-    if (this.isSigmaSum(item)) {
+    // 合計値,Σ
+    if (item.base.type === 'op' && item.base.name === '\\sum') {
       const beginningVar = item.sub.body[0].text
       const beginningValue = item.sub.body[2].text
       const endVar = item.sup.text
       const prefixCode = `Array.from(
         { length: (${endVar} + 1) - ${beginningValue} },
         (_, ${beginningVar}) => ${beginningVar} + ${beginningValue}
-      ).reduce((__sum, i) => __sum + `
+      ).reduce((__sum${depth}, i) => __sum${depth} + `
       const suffixCode = `, 0)`
 
       this.setIgnoredVar(beginningVar)
@@ -243,17 +254,16 @@ class FuncInfo {
     }
   }
 
-  setParsedKatexData (parsed, depth = 0) {
+  setKatexData (items, depth = 0) {
     let suffix = ''
 
-    parsed.forEach((item, i) => {
-      const prevItem = parsed[i - 1]
-      const additionalInfo = this.addInfo(item, prevItem, depth)
+    for (let index = 0; index < items.length; index++) {
+      const additionalInfo = this.addInfo(index, items, depth)
 
       if (additionalInfo.suffix) {
         suffix += additionalInfo.suffix
       }
-    })
+    }
 
     if (suffix) {
       this.addCode(suffix)
@@ -264,9 +274,9 @@ class FuncInfo {
     // 参考URL: https://github.com/KaTeX/KaTeX/issues/554
     // 正式なparserが出たらそっちに移行する。
     this.latex = latex
-    const parsed = katex.__parse(latex)
+    const items = katex.__parse(latex)
 
-    this.setParsedKatexData(parsed)
+    this.setKatexData(items)
     this.setFuncCode()
   }
 }
