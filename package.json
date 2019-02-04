@@ -1,6 +1,6 @@
 {
   "name": "latex-to-function",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "src/func-info.js",
   "files": [
