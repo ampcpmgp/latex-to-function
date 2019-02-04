@@ -2,7 +2,7 @@
   "name": "latex-to-function",
   "version": "1.0.3",
   "description": "",
-  "main": "src/func-info.js",
+  "main": "src/index.js",
   "files": [
     "dist",
     "src",
@@ -12,7 +12,7 @@
   "scripts": {
     "test": "node ./test/assert-latex",
     "precommit": "lint-staged",
-    "dist": "parcel build ./src/func-info.js --out-dir ./dist"
+    "dist": "parcel build ./src/index.js --out-dir ./dist"
   },
   "repository": {
     "type": "git",
