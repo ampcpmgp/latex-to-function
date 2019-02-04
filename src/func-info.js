@@ -19,68 +19,6 @@ class FuncInfo {
     })
   }
 
-  addInfo (index, items, depth) {
-    const item = items[index]
-    const prevItem = items[index - 1]
-
-    // 機能追加時に以下のログを有効にし確認する
-    console.info(
-      `--------\n`,
-      `depth: ${depth}\n`,
-      `args: ${this.args}\n\n`,
-      `executions: ${this.executions[0]}\n\n`,
-      item
-    )
-
-    let additionalInfo = {
-      suffix: ''
-    }
-
-    // 乗算の省略がなされていた場合、乗算コードを追加する
-    if (this.isSkipMultiplier(item, prevItem)) {
-      this.addCode('*')
-    }
-
-    // type ごとに関数コードを生成ロジックを用意する
-    if (item.type === 'textord') {
-      this.addCode(item.text)
-    }
-
-    if (item.type === 'mathord') {
-      this.addArg(item.text)
-      this.addCode(item.text)
-    }
-
-    if (item.type === 'atom') {
-      this.addAtomInfo(item)
-    }
-
-    if (item.type === 'supsub') {
-      additionalInfo.suffix = this.addSubsupInfo(item, depth)
-    }
-
-    if (item.type === 'genfrac') {
-      this.addCode('(')
-      this.setKatexData(item.numer.body, depth + 1)
-      this.addCode(')/')
-      this.addCode('(')
-      this.setKatexData(item.denom.body, depth + 1)
-      this.addCode(')')
-    }
-
-    if (item.type === 'sqrt') {
-      this.addCode('Math.sqrt(')
-      this.setKatexData(item.body.body, depth + 1) // type is ordgroup
-      this.addCode(')')
-    }
-
-    if (item.type === 'styling') {
-      this.setKatexData(item.body, depth + 1)
-    }
-
-    return additionalInfo
-  }
-
   addArg (variable) {
     const isExistsArg = this.args.some(arg => arg === variable)
 
@@ -182,6 +120,68 @@ class FuncInfo {
     const isPrevArithmetic = this.isArithmetic(prevItem)
 
     return !isCurrentArithmetic && !isPrevArithmetic
+  }
+
+  addInfo (index, items, depth) {
+    const item = items[index]
+    const prevItem = items[index - 1]
+
+    // 機能追加時に以下のログを有効にし確認する
+    console.info(
+      `--------\n`,
+      `depth: ${depth}\n`,
+      `args: ${this.args}\n\n`,
+      `executions: ${this.executions[0]}\n\n`,
+      item
+    )
+
+    let additionalInfo = {
+      suffix: ''
+    }
+
+    // 乗算の省略がなされていた場合、乗算コードを追加する
+    if (this.isSkipMultiplier(item, prevItem)) {
+      this.addCode('*')
+    }
+
+    // type ごとに関数コードを生成ロジックを用意する
+    if (item.type === 'textord') {
+      this.addCode(item.text)
+    }
+
+    if (item.type === 'mathord') {
+      this.addArg(item.text)
+      this.addCode(item.text)
+    }
+
+    if (item.type === 'atom') {
+      this.addAtomInfo(item)
+    }
+
+    if (item.type === 'supsub') {
+      additionalInfo.suffix = this.addSubsupInfo(item, depth)
+    }
+
+    if (item.type === 'genfrac') {
+      this.addCode('(')
+      this.setKatexData(item.numer.body, depth + 1)
+      this.addCode(')/')
+      this.addCode('(')
+      this.setKatexData(item.denom.body, depth + 1)
+      this.addCode(')')
+    }
+
+    if (item.type === 'sqrt') {
+      this.addCode('Math.sqrt(')
+      this.setKatexData(item.body.body, depth + 1) // type is ordgroup
+      this.addCode(')')
+    }
+
+    if (item.type === 'styling') {
+      this.setKatexData(item.body, depth + 1)
+    }
+
+    return additionalInfo
   }
 
   addAtomInfo (item) {
