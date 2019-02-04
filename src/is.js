@@ -1,19 +1,44 @@
-function open (item) {
-  return item.type === 'atom' && item.family === 'open'
-}
-exports.open = open
+const is = {
+  open (item) {
+    return item.type === 'atom' && item.family === 'open'
+  },
 
-function close (item) {
-  return item.type === 'atom' && item.family === 'close'
-}
-exports.close = close
+  close (item) {
+    return item.type === 'atom' && item.family === 'close'
+  },
 
-function parentheses (item) {
-  return open(item) || close(item)
-}
-exports.parentheses = parentheses
+  parentheses (item) {
+    return is.open(item) || is.close(item)
+  },
 
-function delta (item) {
-  return item.type === 'mathord' && item.text === 'd'
+  delta (item) {
+    return item.type === 'mathord' && item.text === 'd'
+  },
+
+  arithmetic (item) {
+    if (item.type === 'atom' && item.text === '+') return true
+    if (item.type === 'atom' && item.text === '-') return true
+    if (item.type === 'atom' && item.text === '*') return true
+    if (item.type === 'atom' && item.text === '\\times') return true
+    if (item.type === 'atom' && item.text === '\\div') return true
+    if (item.type === 'atom' && item.text === '±') return true
+    if (item.type === 'atom' && item.text === '\\pm') return true
+    if (item.type === 'textord' && item.text === '/') return true
+
+    return false
+  },
+
+  sigma (item) {
+    return (
+      item.type === 'supsub' &&
+      item.base.type === 'op' &&
+      item.base.name === '\\sum'
+    )
+  },
+
+  numericValue (item) {
+    return item.type === 'textord'
+  }
 }
-exports.delta = delta
+
+module.exports = is

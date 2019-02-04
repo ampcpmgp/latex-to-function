@@ -77,47 +77,22 @@ class FuncInfo {
     this.code = beautify(this.func.toString())
   }
 
-  isArithmetic (item) {
-    if (item.type === 'atom' && item.text === '+') return true
-    if (item.type === 'atom' && item.text === '-') return true
-    if (item.type === 'atom' && item.text === '*') return true
-    if (item.type === 'atom' && item.text === '\\times') return true
-    if (item.type === 'atom' && item.text === '\\div') return true
-    if (item.type === 'atom' && item.text === '±') return true
-    if (item.type === 'atom' && item.text === '\\pm') return true
-    if (item.type === 'textord' && item.text === '/') return true
-
-    return false
-  }
-
-  isSigmaSum (item) {
-    return (
-      item.type === 'supsub' &&
-      item.base.type === 'op' &&
-      item.base.name === '\\sum'
-    )
-  }
-
-  isNumericValue (item) {
-    return item.type === 'textord'
-  }
-
   // 乗算の省略がなされているか - 例 2xy
   isSkipMultiplier (currentItem, prevItem) {
     if (!prevItem) return false
 
     // 2連続数値扱いのデータが来た場合
     const isContinuousNumericalItem =
-      this.isNumericValue(currentItem) && this.isNumericValue(prevItem)
+      is.numericValue(currentItem) && is.numericValue(prevItem)
     if (isContinuousNumericalItem) return false
 
-    if (this.isSigmaSum(prevItem)) return false
+    if (is.sigma(prevItem)) return false
 
     // `(` で始まっているか、 `)` で終わっている場合
     if (is.open(prevItem) || is.close(currentItem)) return false
 
-    const isCurrentArithmetic = this.isArithmetic(currentItem)
-    const isPrevArithmetic = this.isArithmetic(prevItem)
+    const isCurrentArithmetic = is.arithmetic(currentItem)
+    const isPrevArithmetic = is.arithmetic(prevItem)
 
     return !isCurrentArithmetic && !isPrevArithmetic
   }
