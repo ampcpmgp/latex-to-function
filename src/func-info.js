@@ -1,7 +1,9 @@
 const katex = require('katex')
 const beautify = require('js-beautify')
 const lodash = require('lodash')
+const { Decimal } = require('decimal.js')
 const Operators = require('./operators')
+const is = require('./is')
 
 class FuncInfo {
   constructor () {
@@ -112,9 +114,7 @@ class FuncInfo {
     if (this.isSigmaSum(prevItem)) return false
 
     // `(` で始まっているか、 `)` で終わっている場合
-    if (prevItem.family === 'open' || currentItem.family === 'close') {
-      return false
-    }
+    if (is.open(prevItem) || is.close(currentItem)) return false
 
     const isCurrentArithmetic = this.isArithmetic(currentItem)
     const isPrevArithmetic = this.isArithmetic(prevItem)
@@ -127,16 +127,16 @@ class FuncInfo {
     const prevItem = items[index - 1]
 
     // 機能追加時に以下のログを有効にし確認する
-    console.info(
-      `--------\n`,
-      `depth: ${depth}\n`,
-      `args: ${this.args}\n\n`,
-      `executions: ${this.executions[0]}\n\n`,
-      item
-    )
+    // console.info(
+    //   `--------\n`,
+    //   `depth: ${depth}\n`,
+    //   `args: ${this.args}\n\n`,
+    //   `executions: ${this.executions[0]}\n\n`,
+    //   item
+    // )
 
     let additionalInfo = {
-      suffix: ''
+      progress: 0
     }
 
     // 乗算の省略がなされていた場合、乗算コードを追加する
@@ -159,7 +159,9 @@ class FuncInfo {
     }
 
     if (item.type === 'supsub') {
-      additionalInfo.suffix = this.addSubsupInfo(item, depth)
+      const progress = this.addSubsupInfo(item, items, depth)
+
+      if (progress) additionalInfo.progress += progress
     }
 
     if (item.type === 'genfrac') {
@@ -205,7 +207,68 @@ class FuncInfo {
     this.addCode(operator)
   }
 
-  addSubsupInfo (item, depth) {
+  getRelatedFormula (
+    currentItem,
+    items,
+    option = {
+      delta: true
+    }
+  ) {
+    const firstIndex = items.indexOf(currentItem) + 1
+    const relatedItems = []
+    const status = {
+      firstParentheses: false,
+      parenthesesCount: 0
+    }
+    let deltaVarName = ''
+    let relatedItemLength = 0
+
+    function isEnd () {
+      if (status.firstParentheses && status.parenthesesCount === 0) return true
+
+      return false
+    }
+
+    for (let index = firstIndex; index < items.length; index++) {
+      const prevItem = items[index - 1]
+      const item = items[index]
+      const nextItem = items[index + 1]
+
+      if (index === firstIndex && is.open(item)) {
+        status.firstParentheses = true
+      }
+
+      if (is.open(item)) {
+        ++status.parenthesesCount
+      }
+
+      if (prevItem && is.close(prevItem)) {
+        --status.parenthesesCount
+      }
+
+      if (option.delta && is.delta(item)) {
+        deltaVarName = nextItem.text
+        relatedItemLength += 2
+
+        break
+      }
+
+      if (isEnd()) {
+        break
+      }
+
+      relatedItems.push(item)
+      ++relatedItemLength
+    }
+
+    return {
+      relatedItems,
+      relatedItemLength,
+      deltaVarName
+    }
+  }
+
+  addSubsupInfo (item, items, depth) {
     // 3^4 等の累乗
     if (item.base.type === 'textord') {
       const code = `Math.pow(${item.base.text}, ${item.sup.text})`
@@ -223,16 +286,35 @@ class FuncInfo {
 
     // 積分
     if (item.base.type === 'op' && item.base.name === '\\int') {
-      const delta = 100
+      const deltaDivisionNum = 100
+      const beginningValue = item.sub.text - 0
+      const endValue = item.sup.text - 0
+      const decimal = new Decimal(endValue)
+        .minus(beginningValue)
+        .div(deltaDivisionNum)
+      const deltaWidth = decimal.toNumber()
+
+      const {
+        relatedItems,
+        relatedItemLength,
+        deltaVarName
+      } = this.getRelatedFormula(item, items, { delta: true })
+
+      const varName = deltaVarName || 'x'
+
       const prefixCode = `Array.from(
-        {length: ${delta}},
-        (_, __i) => (${item.sup.text} - ${item.sub.text}) / ${delta} * __i
-      ).reduce(__width${depth} => __width${depth} *`
+        {length: ${deltaDivisionNum}},
+        (_, __i) => ${beginningValue} + ${deltaWidth} * __i
+      ).reduce((__sum${depth}, ${varName}) => __sum${depth} + ${deltaWidth} * `
+
       const suffixCode = `, 0)`
 
+      this.setIgnoredVar(varName)
       this.addCode(prefixCode)
+      this.setKatexData(relatedItems, depth + 1)
+      this.addCode(suffixCode)
 
-      return suffixCode
+      return relatedItemLength
     }
 
     // 合計値,Σ
@@ -245,28 +327,22 @@ class FuncInfo {
         (_, ${beginningVar}) => ${beginningVar} + ${beginningValue}
       ).reduce((__sum${depth}, i) => __sum${depth} + `
       const suffixCode = `, 0)`
+      const { relatedItems } = this.getRelatedFormula(item, items)
 
       this.setIgnoredVar(beginningVar)
       this.addArg(endVar)
       this.addCode(prefixCode)
+      this.setKatexData(relatedItems, depth + 1)
+      this.addCode(suffixCode)
 
-      return suffixCode
+      return relatedItems.length
     }
   }
 
   setKatexData (items, depth = 0) {
-    let suffix = ''
-
     for (let index = 0; index < items.length; index++) {
       const additionalInfo = this.addInfo(index, items, depth)
-
-      if (additionalInfo.suffix) {
-        suffix += additionalInfo.suffix
-      }
-    }
-
-    if (suffix) {
-      this.addCode(suffix)
+      index += additionalInfo.progress
     }
   }
 

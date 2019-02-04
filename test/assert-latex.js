@@ -2,17 +2,39 @@ const lodash = require('lodash')
 const FuncInfo = require('../src/func-info')
 const SupportedSymbols = require('../src/supported-symbols')
 
-function assertLatex (latex, vars, expected) {
+function isAllowableRange (value, expected, ratio) {
+  const [min, max] = [expected * (1 + ratio), expected * (1 - ratio)].sort(
+    (a, b) => a - b
+  )
+
+  return value > min && value < max
+}
+
+function assertLatex (
+  latex,
+  vars,
+  expected,
+  option = {
+    allowableRatio: 0
+  }
+) {
   const funcInfo = new FuncInfo()
   funcInfo.setLatexData(latex)
   const value = funcInfo.func(...vars)
-  const condition = lodash.isEqual(value, expected)
 
-  if (!condition) {
+  function condition () {
+    if (option.allowableRatio === 0) return lodash.isEqual(value, expected)
+
+    return isAllowableRange(value, expected, option.allowableRatio)
+  }
+
+  if (!condition()) {
     const msg = `
 Latex: ${latex}
 ${[funcInfo.args]}: ${vars}
-expected: ${expected}
+expected: ${expected} ${
+  option.allowableRatio ? `(± ${option.allowableRatio * 100}%)` : ''
+}
 but value: ${value}
 
 ${funcInfo.code}
@@ -23,7 +45,10 @@ ${funcInfo.code}
 
 // テストコードは上に追加するとデバッグしやすい
 
-// assertLatex('\\int_1^4 (x^2 + 4) dx + \\sum_{i=0}^n ix^2', [3, 2], 57)
+assertLatex('\\int_2^4 4x dx + \\sum_{i=0}^n (ia^2 + 5)', [3, 2], 68, {
+  allowableRatio: 0.01
+})
+assertLatex('\\int_2^4 4x dx', [], 24, { allowableRatio: 0.01 })
 
 assertLatex('2\\sum_{i=5}^n (i^2 + 1)', [6], 126)
 
