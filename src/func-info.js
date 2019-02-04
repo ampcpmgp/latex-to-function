@@ -3,6 +3,7 @@ const beautify = require('js-beautify')
 const lodash = require('lodash')
 const { Decimal } = require('decimal.js')
 const Operators = require('./operators')
+const SupportedSymbols = require('./supported-symbols')
 const is = require('./is')
 
 class FuncInfo {
@@ -332,4 +333,7 @@ class FuncInfo {
   }
 }
 
-module.exports = FuncInfo
+module.exports = {
+  FuncInfo,
+  SupportedSymbols
+}
