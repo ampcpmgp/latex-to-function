@@ -45,6 +45,9 @@ ${funcInfo.code}
 
 // テストコードは上に追加するとデバッグしやすい
 
+assertLatex('\\int_2^4 4x + \\sum_{i=0}^n (ia^2 + 5)', [3, 2], 68, {
+  allowableRatio: 0.01
+})
 assertLatex('\\int_2^4 4x dx + \\sum_{i=0}^n (ia^2 + 5)', [3, 2], 68, {
   allowableRatio: 0.01
 })

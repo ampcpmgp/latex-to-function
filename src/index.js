@@ -199,22 +199,24 @@ class FuncInfo {
     let deltaVarName = ''
     let relatedItemLength = 0
 
-    function isEnd () {
+    function isEnd (currentItem) {
       if (status.firstParentheses && status.parenthesesCount === 0) return true
+      if (option.delta && is.delta(currentItem)) return true
+      if (!status.firstParentheses && is.diffOperators(currentItem)) return true
 
       return false
     }
 
     for (let index = firstIndex; index < items.length; index++) {
       const prevItem = items[index - 1]
-      const item = items[index]
+      const currentItem = items[index]
       const nextItem = items[index + 1]
 
-      if (index === firstIndex && is.open(item)) {
+      if (index === firstIndex && is.open(currentItem)) {
         status.firstParentheses = true
       }
 
-      if (is.open(item)) {
+      if (is.open(currentItem)) {
         ++status.parenthesesCount
       }
 
@@ -222,18 +224,16 @@ class FuncInfo {
         --status.parenthesesCount
       }
 
-      if (option.delta && is.delta(item)) {
+      if (option.delta && is.delta(currentItem)) {
         deltaVarName = nextItem.text
         relatedItemLength += 2
+      }
 
+      if (isEnd(currentItem)) {
         break
       }
 
-      if (isEnd()) {
-        break
-      }
-
-      relatedItems.push(item)
+      relatedItems.push(currentItem)
       ++relatedItemLength
     }
 
@@ -277,7 +277,6 @@ class FuncInfo {
       } = this.getRelatedFormula(item, items, { delta: true })
 
       const varName = deltaVarName || 'x'
-
       const prefixCode = `Array.from(
         {length: ${deltaDivisionNum}},
         (_, __i) => ${beginningValue} + ${deltaWidth} * __i

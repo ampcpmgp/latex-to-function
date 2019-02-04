@@ -15,14 +15,20 @@ const is = {
     return item.type === 'mathord' && item.text === 'd'
   },
 
-  arithmetic (item) {
+  diffOperators (item) {
     if (item.type === 'atom' && item.text === '+') return true
     if (item.type === 'atom' && item.text === '-') return true
+    if (item.type === 'atom' && item.text === '±') return true
+    if (item.type === 'atom' && item.text === '\\pm') return true
+
+    return false
+  },
+
+  arithmetic (item) {
+    if (is.diffOperators(item)) return true
     if (item.type === 'atom' && item.text === '*') return true
     if (item.type === 'atom' && item.text === '\\times') return true
     if (item.type === 'atom' && item.text === '\\div') return true
-    if (item.type === 'atom' && item.text === '±') return true
-    if (item.type === 'atom' && item.text === '\\pm') return true
     if (item.type === 'textord' && item.text === '/') return true
 
     return false
