@@ -1,5 +1,5 @@
 const lodash = require('lodash')
-const FuncInfo = require('../src/func-info')
+const { FuncInfo } = require('../src/func-info')
 const SupportedSymbols = require('../src/supported-symbols')
 
 function isAllowableRange (value, expected, ratio) {

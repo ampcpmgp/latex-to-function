@@ -112,7 +112,7 @@ class FuncInfo {
     // )
 
     let additionalInfo = {
-      progress: 0
+      skipCount: 0
     }
 
     // 乗算の省略がなされていた場合、乗算コードを追加する
@@ -135,9 +135,9 @@ class FuncInfo {
     }
 
     if (item.type === 'supsub') {
-      const progress = this.addSubsupInfo(item, items, depth)
+      const skipCount = this.addSubsupInfo(item, items, depth)
 
-      if (progress) additionalInfo.progress += progress
+      if (skipCount) additionalInfo.skipCount += skipCount
     }
 
     if (item.type === 'genfrac') {
@@ -318,7 +318,7 @@ class FuncInfo {
   setKatexData (items, depth = 0) {
     for (let index = 0; index < items.length; index++) {
       const additionalInfo = this.addInfo(index, items, depth)
-      index += additionalInfo.progress
+      index += additionalInfo.skipCount
     }
   }
 
