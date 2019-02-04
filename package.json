@@ -3,6 +3,12 @@
   "version": "1.0.2",
   "description": "",
   "main": "src/func-info.js",
+  "files": [
+    "dist",
+    "src",
+    "readme.md",
+    "package.json"
+  ],
   "scripts": {
     "test": "node ./test/assert-latex",
     "precommit": "lint-staged",
