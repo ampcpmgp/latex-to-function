@@ -79,5 +79,16 @@ module.exports = [
       args: [6],
       result: 61
     }
+  },
+  {
+    text: '\\int',
+    latex: '\\int_2^4 x^2',
+    description:
+      'This is an approximate value using the division quadrature (sum of rectangular areas by dividing 100 rectangles in the x direction).',
+    test: {
+      args: [],
+      result: 18.667,
+      allowableRatio: 0.01
+    }
   }
 ]

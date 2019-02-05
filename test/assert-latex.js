@@ -80,7 +80,10 @@ assertLatex(
 )
 
 for (let symbol of SupportedSymbols) {
-  assertLatex(symbol.latex, symbol.test.args, symbol.test.result)
+  const option = {
+    allowableRatio: symbol.test.allowableRatio || 0
+  }
+  assertLatex(symbol.latex, symbol.test.args, symbol.test.result, option)
 }
 
 console.info('Test all passed!!')
