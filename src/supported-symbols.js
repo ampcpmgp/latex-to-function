@@ -5,7 +5,7 @@ module.exports = [
     latex: 'x + 2',
     test: {
       args: [1],
-      result: 3
+      result: [3]
     }
   },
   {
@@ -13,7 +13,7 @@ module.exports = [
     latex: 'x - 3',
     test: {
       args: [5],
-      result: 2
+      result: [2]
     }
   },
   {
@@ -21,7 +21,7 @@ module.exports = [
     latex: 'x * 4',
     test: {
       args: [3],
-      result: 12
+      result: [12]
     }
   },
   {
@@ -29,7 +29,7 @@ module.exports = [
     latex: 'x / 5',
     test: {
       args: [10],
-      result: 2
+      result: [2]
     }
   },
   {
@@ -37,7 +37,7 @@ module.exports = [
     latex: 'x \\times 3',
     test: {
       args: [3],
-      result: 9
+      result: [9]
     }
   },
   {
@@ -45,7 +45,7 @@ module.exports = [
     latex: 'x \\div 2',
     test: {
       args: [2],
-      result: 1
+      result: [1]
     }
   },
   {
@@ -61,7 +61,7 @@ module.exports = [
     latex: '\\frac{x}{5}',
     test: {
       args: [5],
-      result: 1
+      result: [1]
     }
   },
   {
@@ -69,7 +69,7 @@ module.exports = [
     latex: '\\sqrt{9}',
     test: {
       args: [],
-      result: 3
+      result: [3]
     }
   },
   {
@@ -77,7 +77,7 @@ module.exports = [
     latex: '\\sum_{i=5}^n i^2',
     test: {
       args: [6],
-      result: 61
+      result: [61]
     }
   },
   {
@@ -87,7 +87,7 @@ module.exports = [
       'This is an approximate value using the division quadrature (sum of rectangular areas by dividing 100 rectangles in the x direction).',
     test: {
       args: [],
-      result: 18.667,
+      result: [18.667],
       allowableRatio: 0.01
     }
   }

@@ -46,7 +46,7 @@ class FuncInfo {
 
   getFuncStr () {
     if (this.executions.length === 1) {
-      return `return ${this.executions[0]}`
+      return `return [${this.executions[0]}]`
     }
 
     return `return [...new Set([${this.executions.join(
@@ -326,6 +326,8 @@ class FuncInfo {
     // 正式なparserが出たらそっちに移行する。
     this.latex = latex
     const items = katex.__parse(latex)
+
+    console.log(items)
 
     this.setKatexData(items)
     this.setFuncCode()

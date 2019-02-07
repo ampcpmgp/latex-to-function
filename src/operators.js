@@ -1,4 +1,5 @@
 module.exports = {
+  '=': '=',
   // 参考URL: https://katex.org/docs/supported.html#relations
   '+': '+',
   '-': '-',
