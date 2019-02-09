@@ -1,57 +1,15 @@
-const lodash = require('lodash')
-const { FuncInfo } = require('../src')
 const SupportedSymbols = require('../src/supported-symbols')
-
-function isAllowableRange (values, expected, ratio) {
-  return values.every(value => {
-    const [min, max] = [expected * (1 + ratio), expected * (1 - ratio)].sort(
-      (a, b) => a - b
-    )
-
-    return values > min && values < max
-  })
-}
-
-function assertLatex (
-  latex,
-  vars,
-  expected,
-  option = {
-    allowableRatio: 0
-  }
-) {
-  const funcInfo = new FuncInfo()
-  funcInfo.setLatexData(latex)
-  const values = funcInfo.func(...vars)
-
-  function condition () {
-    if (option.allowableRatio === 0) return lodash.isEqual(values, expected)
-
-    return isAllowableRange(values, expected, option.allowableRatio)
-  }
-
-  if (!condition()) {
-    const msg = `
-Latex: ${latex}
-${[funcInfo.args]}: ${vars}
-expected: ${expected} ${
-  option.allowableRatio ? `(± ${option.allowableRatio * 100}%)` : ''
-}
-but values: ${values}
-
-${funcInfo.code}
-`
-    throw new Error(msg)
-  }
-}
+const { assertLatex } = require('./util')
 
 // テストコードは上に追加するとデバッグしやすい
-// assertLatex(`
-// f(x) = x^2 + 4x\\\\
-// f'(x) = \\lim_{h \rightarrow 0}\\frac{f(x+h)-f(x)}{h}
-// `, [3, 2], 68, {
-//   allowableRatio: 0.01
-// })
+// assertLatex(
+//   [`f(x) = ± 4x`, `y = ± 5a`, `f'(b) * y`],
+//   [3, 2],
+//   68,
+//   {
+//     multiple: true
+//   }
+// )
 
 assertLatex('\\int_2^4 4x + \\sum_{i=0}^n (ia^2 + 5)', [3, 2], [68], {
   allowableRatio: 0.01

@@ -17,7 +17,9 @@ class FuncInfo {
       ignoredVars: [],
       args: [],
       executions: [''],
-      func: null,
+      func: () => {
+        throw new Error('no set latex')
+      },
       code: ''
     })
   }
@@ -321,7 +323,7 @@ class FuncInfo {
     }
   }
 
-  setLatexData (latex) {
+  setLatex (latex) {
     // 参考URL: https://github.com/KaTeX/KaTeX/issues/554
     // 正式なparserが出たらそっちに移行する。
     this.latex = latex
@@ -331,6 +333,10 @@ class FuncInfo {
 
     this.setKatexData(items)
     this.setFuncCode()
+  }
+
+  setMultipleLatex (latex) {
+    console.log(latex)
   }
 }
 

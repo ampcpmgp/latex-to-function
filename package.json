@@ -10,7 +10,7 @@
     "package.json"
   ],
   "scripts": {
-    "test": "node ./test/assert-latex",
+    "test": "node ./test",
     "precommit": "lint-staged",
     "dist": "parcel build ./src/index.js --out-dir ./dist"
   },
