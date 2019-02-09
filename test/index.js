@@ -1,15 +1,10 @@
 const SupportedSymbols = require('../src/supported-symbols')
-const { assertLatex } = require('./util')
+const { assertLatex, assertMultipleLatex } = require('./util')
 
 // テストコードは上に追加するとデバッグしやすい
-// assertLatex(
-//   [`f(x) = ± 4x`, `y = ± 5a`, `f'(b) * y`],
-//   [3, 2],
-//   68,
-//   {
-//     multiple: true
-//   }
-// )
+assertMultipleLatex([`f(x) = ± 4x`, `y = ± 5a`, `f'(b) * y`], [3, 2], 68, {
+  multiple: true
+})
 
 assertLatex('\\int_2^4 4x + \\sum_{i=0}^n (ia^2 + 5)', [3, 2], [68], {
   allowableRatio: 0.01
