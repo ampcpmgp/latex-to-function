@@ -1,4 +1,12 @@
 const is = {
+  function (item) {
+    return item.type === 'mathord' && /[f-h]/.test(item.text)
+  },
+
+  variable (item) {
+    return item.type === 'mathord' && !is.function(item)
+  },
+
   open (item) {
     return item.type === 'atom' && item.family === 'open'
   },

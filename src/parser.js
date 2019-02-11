@@ -156,7 +156,11 @@ class Parser {
       this.addCode(item.text)
     }
 
-    if (item.type === 'mathord') {
+    if (is.function(item)) {
+      this.addCode(item.text)
+    }
+
+    if (is.variable(item)) {
       this.addArg(item.text)
       this.addCode(item.text)
     }
