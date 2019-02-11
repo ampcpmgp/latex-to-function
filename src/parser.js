@@ -40,6 +40,7 @@ class Parser {
       latex: '',
       ignoredVars: [],
       args: [],
+      name: '',
       executions: [''],
       func: () => {
         throw new Error('no set latex')
@@ -360,6 +361,11 @@ class Parser {
   }
 
   katex (items, depth = 0) {
+    const hasEqaul = items.some(item => is.equal(item))
+
+    // TODO
+    void hasEqaul
+
     for (let i = 0; i < items.length; i++) {
       const additionalInfo = this.parseKatexItem(i, items, depth)
       i += additionalInfo.skipCount

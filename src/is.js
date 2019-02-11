@@ -1,4 +1,8 @@
 const is = {
+  equal (item) {
+    return item.type === 'atom' && item.text === '='
+  },
+
   function (item) {
     return item.type === 'mathord' && /[f-h]/.test(item.text)
   },
