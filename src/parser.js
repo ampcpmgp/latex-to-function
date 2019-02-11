@@ -143,13 +143,13 @@ class Parser {
     const prevItem = items[index - 1]
 
     // 機能追加時に以下のログを有効にし確認する
-    // console.info(
-    //   `--------\n`,
-    //   `depth: ${depth}\n`,
-    //   `args: ${this.args}\n\n`,
-    //   `executions: ${this.executions[0]}\n\n`,
-    //   item
-    // )
+    console.info(
+      `--------\n`,
+      `depth: ${depth}\n`,
+      `args: ${this._curRes().args}\n\n`,
+      `executions: ${this._curRes().executions[0]}\n\n`,
+      Object.assign({}, item, { loc: undefined })
+    )
 
     let additionalInfo = {
       skipCount: 0
