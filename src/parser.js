@@ -142,15 +142,6 @@ class Parser {
     const item = items[index]
     const prevItem = items[index - 1]
 
-    // 機能追加時に以下のログを有効にし確認する
-    console.info(
-      `--------\n`,
-      `depth: ${depth}\n`,
-      `args: ${this._curRes().args}\n\n`,
-      `executions: ${this._curRes().executions[0]}\n\n`,
-      Object.assign({}, item, { loc: undefined })
-    )
-
     let additionalInfo = {
       skipCount: 0
     }
@@ -198,6 +189,16 @@ class Parser {
     if (item.type === 'styling') {
       this.setKatexData(item.body, depth + 1)
     }
+
+    // 機能追加時に以下のログを有効にし確認する
+    console.info(
+      `--------\n`,
+      Object.assign({}, item, { loc: undefined }),
+      '\n\n',
+      `depth: ${depth}\n`,
+      `args: ${this._curRes().args}\n\n`,
+      `executions: ${this._curRes().executions[0]}\n`
+    )
 
     return additionalInfo
   }
