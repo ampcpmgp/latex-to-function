@@ -1,5 +1,5 @@
 const lodash = require('lodash')
-const { FuncInfo } = require('../src')
+const { Parser } = require('../src')
 
 function isAllowableRange (values, expected, ratio) {
   return values.every(value => {
@@ -19,10 +19,10 @@ function assertLatex (
     allowableRatio: 0
   }
 ) {
-  const funcInfo = new FuncInfo()
-  funcInfo.setLatex(latex)
+  const parser = new Parser()
+  parser.setLatex(latex)
 
-  const values = funcInfo.func(...vars)
+  const values = parser.func(...vars)
 
   function condition () {
     if (option.allowableRatio === 0) return lodash.isEqual(values, expected)
@@ -33,13 +33,13 @@ function assertLatex (
   if (!condition()) {
     const msg = `
 Latex: ${latex}
-${[funcInfo.args]}: ${vars}
+${[parser.args]}: ${vars}
 expected: ${expected} ${
   option.allowableRatio ? `(± ${option.allowableRatio * 100}%)` : ''
 }
 but values: ${values}
 
-${funcInfo.code}
+${parser.code}
 `
     throw new Error(msg)
   }
@@ -47,7 +47,7 @@ ${funcInfo.code}
 
 exports.assertLatex = assertLatex
 
-function assertMultipleLatex (
+function assertLatexes (
   latex,
   vars,
   expected,
@@ -55,10 +55,10 @@ function assertMultipleLatex (
     allowableRatio: 0
   }
 ) {
-  const funcInfo = new FuncInfo()
-  funcInfo.setMultipleLatex(latex)
+  const parser = new Parser()
+  parser.latexes(latex)
 
-  const values = funcInfo.func(...vars)
+  const values = parser.func(...vars)
 
   function condition () {
     if (option.allowableRatio === 0) return lodash.isEqual(values, expected)
@@ -69,16 +69,16 @@ function assertMultipleLatex (
   if (!condition()) {
     const msg = `
 Latex: ${latex}
-${[funcInfo.args]}: ${vars}
+${[parser.args]}: ${vars}
 expected: ${expected} ${
   option.allowableRatio ? `(± ${option.allowableRatio * 100}%)` : ''
 }
 but values: ${values}
 
-${funcInfo.code}
+${parser.code}
 `
     throw new Error(msg)
   }
 }
 
-exports.assertMultipleLatex = assertMultipleLatex
+exports.assertLatexes = assertLatexes

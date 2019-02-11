@@ -6,13 +6,38 @@ const Operators = require('./operators')
 const SupportedSymbols = require('./supported-symbols')
 const is = require('./is')
 
-class FuncInfo {
+class Parser {
   constructor () {
-    this.init()
+    this._results = []
+    this._cache = {
+      currentParsePosition: 0
+    }
   }
 
-  init () {
-    Object.assign(this, {
+  /**
+   * Position currently being parsed
+   */
+  _curPos (index) {
+    if (index != null) {
+      this._cache.currentParsePosition = index
+    }
+
+    return this._cache.currentParsePosition
+  }
+
+  /**
+   * Result currently being parsed
+   */
+  _curRes (result) {
+    if (result != null) {
+      this._results[this._curPos()] = result
+    }
+
+    return this._results[this._curPos()]
+  }
+
+  initialData () {
+    return {
       latex: '',
       ignoredVars: [],
       args: [],
@@ -21,63 +46,77 @@ class FuncInfo {
         throw new Error('no set latex')
       },
       code: ''
-    })
+    }
+  }
+
+  result (index = 0) {
+    return this._results[index]
   }
 
   addArg (variable) {
-    const isExistsArg = this.args.some(arg => arg === variable)
+    const result = this._curRes()
+    const isExistsArg = result.args.some(arg => arg === variable)
 
     if (isExistsArg) return null
 
-    const isIgnoredVar = this.ignoredVars.some(
+    const isIgnoredVar = result.ignoredVars.some(
       ignoredVar => ignoredVar === variable
     )
 
     if (isIgnoredVar) return null
 
-    this.args.push(variable)
+    result.args.push(variable)
   }
 
-  setIgnoredVar (variable) {
-    const isExistsArg = this.ignoredVars.some(
+  addIgnoredVar (variable) {
+    const result = this._curRes()
+    const isExistsArg = result.ignoredVars.some(
       ignoredVar => ignoredVar === variable
     )
 
-    if (!isExistsArg) this.ignoredVars.push(variable)
-  }
-
-  getFuncStr () {
-    if (this.executions.length === 1) {
-      return `return [${this.executions[0]}]`
-    }
-
-    return `return [...new Set([${this.executions.join(
-      ','
-    )}])].sort((a, b) => a - b)`
+    if (!isExistsArg) result.ignoredVars.push(variable)
   }
 
   addExecutions (codes) {
-    const baseExecutions = this.executions
-    this.executions = []
+    const result = this._curRes()
+    const baseExecutions = result.executions
+
+    result.executions = []
 
     for (let code of codes) {
       const executions = lodash.cloneDeep(baseExecutions)
-      this.executions.push(
+      result.executions.push(
         ...executions.map(execution => `${execution}${code}`)
       )
     }
   }
 
   addCode (code) {
-    for (let i = 0; i < this.executions.length; ++i) {
-      this.executions[i] += code
+    const result = this._curRes()
+
+    for (let i = 0; i < result.executions.length; ++i) {
+      result.executions[i] += code
     }
   }
 
-  setFuncCode () {
+  funcStr () {
+    const result = this._curRes()
+
+    if (result.executions.length === 1) {
+      return `return [${result.executions[0]}]`
+    }
+
+    return `return [...new Set([${result.executions.join(
+      ','
+    )}])].sort((a, b) => a - b)`
+  }
+
+  attachFuncCode () {
+    const result = this._curRes()
+
     // eslint-disable-next-line no-new-func
-    this.func = new Function(...this.args, this.getFuncStr())
-    this.code = beautify(this.func.toString())
+    result.func = new Function(...result.args, this.funcStr())
+    result.code = beautify(result.func.toString())
   }
 
   // 乗算の省略がなされているか - 例 2xy
@@ -100,7 +139,7 @@ class FuncInfo {
     return !isCurrentArithmetic && !isPrevArithmetic
   }
 
-  addInfo (index, items, depth) {
+  parseKatexItem (index, items, depth) {
     const item = items[index]
     const prevItem = items[index - 1]
 
@@ -286,7 +325,7 @@ class FuncInfo {
 
       const suffixCode = `, 0)`
 
-      this.setIgnoredVar(varName)
+      this.addIgnoredVar(varName)
       this.addCode(prefixCode)
       this.setKatexData(relatedItems, depth + 1)
       this.addCode(suffixCode)
@@ -306,7 +345,7 @@ class FuncInfo {
       const suffixCode = `, 0)`
       const { relatedItems } = this.getRelatedFormula(item, items)
 
-      this.setIgnoredVar(beginningVar)
+      this.addIgnoredVar(beginningVar)
       this.addArg(endVar)
       this.addCode(prefixCode)
       this.setKatexData(relatedItems, depth + 1)
@@ -316,31 +355,50 @@ class FuncInfo {
     }
   }
 
-  setKatexData (items, depth = 0) {
-    for (let index = 0; index < items.length; index++) {
-      const additionalInfo = this.addInfo(index, items, depth)
-      index += additionalInfo.skipCount
+  katex (items, depth = 0) {
+    for (let i = 0; i < items.length; i++) {
+      const additionalInfo = this.parseKatexItem(i, items, depth)
+      i += additionalInfo.skipCount
     }
+
+    this.attachFuncCode()
+
+    return this._curRes()
   }
 
-  setLatex (latex) {
+  latex (latex, index = 0) {
+    this._curPos(index)
+    this._curRes(this.initialData())
+
     // 参考URL: https://github.com/KaTeX/KaTeX/issues/554
     // 正式なparserが出たらそっちに移行する。
-    this.latex = latex
     const items = katex.__parse(latex)
+    const result = this.katex(items)
 
-    console.log(items)
-
-    this.setKatexData(items)
-    this.setFuncCode()
+    return result
   }
 
-  setMultipleLatex (latex) {
-    console.log(latex)
+  latexes (latexes) {
+    this.latex(latexes[0], 0)
+    // const _results = latexes.map((item, i) => this.latex(item, i))
+    // return result
+
+    return []
   }
 }
 
 module.exports = {
-  FuncInfo,
-  SupportedSymbols
+  Parser,
+  SupportedSymbols,
+
+  parse (latex) {
+    const parser = new Parser()
+    const multiple = Array.isArray(latex)
+
+    if (multiple) {
+      return parser.latexes(latex)
+    } else {
+      return parser.latex(latex)
+    }
+  }
 }
