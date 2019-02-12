@@ -204,7 +204,7 @@ class Parser {
 
     // 機能追加時に以下のログを有効にし確認する
     console.info(
-      `--------\n`,
+      `--------------------------------------------------------\n`,
       Object.assign({}, item, { loc: undefined }),
       '\n\n',
       `depth: ${depth}\n`,
@@ -303,6 +303,7 @@ class Parser {
 
     // x^2 等の累乗
     if (item.base.type === 'mathord') {
+      console.log('---\n\naaaaaaaaaaaaaa', item.sup.body)
       const code = `Math.pow(${item.base.text}, ${item.sup.text})`
 
       this.addArg(item.base.text)
