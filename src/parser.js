@@ -36,9 +36,9 @@ class Parser {
     return this._results[this._curPos()]
   }
 
-  initialData () {
+  initialData ({ latex = '' }) {
     return {
-      latex: '',
+      latex,
       ignoredVars: [],
       args: [],
       name: '',
@@ -387,36 +387,38 @@ class Parser {
     return {
       leftItems,
       rightItems,
-      hasEqual
+      hasLeft: leftItems.length !== 0
     }
   }
 
   katex (items, depth = 0) {
-    const { leftItems, rightItems } = this.divideItems(items)
+    const { hasLeft, leftItems, rightItems } = this.divideItems(items)
 
-    console.log('left side info', LeftSide.info(leftItems))
-    // TODO: set left side info to result
+    // 左辺があれば情報設定
+    if (hasLeft) {
+      const { name } = LeftSide.info(leftItems)
+      const result = this._curRes()
 
+      result.name = name
+    }
+
+    // 右辺は必ずある想定で設定
     for (let i = 0; i < rightItems.length; i++) {
-      const additionalInfo = this.parseKatexItem(i, items, depth)
+      const additionalInfo = this.parseKatexItem(i, rightItems, depth)
       i += additionalInfo.skipCount
     }
 
     this.attachFuncCode()
-
-    return this._curRes()
   }
 
   latex (latex, index = 0) {
     this._curPos(index)
-    this._curRes(this.initialData())
+    this._curRes(this.initialData({ latex }))
 
     // 参考URL: https://github.com/KaTeX/KaTeX/issues/554
     // 正式なparserが出たらそっちに移行する。
     const items = katex.__parse(latex)
-    const result = this.katex(items)
-
-    return result
+    this.katex(items)
   }
 
   latexes (latexes) {
@@ -424,7 +426,7 @@ class Parser {
     // const _results = latexes.map((item, i) => this.latex(item, i))
     // return result
 
-    return []
+    return this._results
   }
 }
 

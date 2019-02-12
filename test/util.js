@@ -56,9 +56,10 @@ function assertLatexes (
   }
 ) {
   const parser = new Parser()
-  parser.latexes(latex)
+  const results = parser.latexes(latex)
+  const lastResult = results[results.length - 1]
 
-  const values = parser.func(...vars)
+  const values = lastResult.func(...vars)
 
   function condition () {
     if (option.allowableRatio === 0) return lodash.isEqual(values, expected)
