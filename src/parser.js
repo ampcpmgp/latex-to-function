@@ -37,11 +37,14 @@ class Parser {
   }
 
   initialData (option = {}) {
-    const { latex } = { ...{ latex: '' }, option }
+    const { latex, ignoredVars } = {
+      ...{ latex: '', ignoredVars: [] },
+      ...option
+    }
 
     return {
       latex,
-      ignoredVars: [],
+      ignoredVars,
       args: [],
       name: '',
       executions: [''],
@@ -103,7 +106,7 @@ class Parser {
   }
 
   funcStr (option = {}) {
-    const { noSort } = { ...{ noSort: true }, option }
+    const { noSort } = { ...{ noSort: true }, ...option }
 
     // TODO
     void noSort
@@ -238,7 +241,7 @@ class Parser {
   }
 
   getRelatedFormula (currentItem, items, option = {}) {
-    const { delta } = { ...{ delta: true }, option }
+    const { delta } = { ...{ delta: true }, ...option }
 
     const firstIndex = items.indexOf(currentItem) + 1
     const relatedItems = []
@@ -416,7 +419,13 @@ class Parser {
 
   latex (latex, index = 0) {
     this._curPos(index)
-    this._curRes(this.initialData({ latex }))
+
+    const ignoredVars = this._results
+      .slice(0, index)
+      .map(item => item.name)
+      .filter(Boolean)
+
+    this._curRes(this.initialData({ latex, ignoredVars }))
 
     // 参考URL: https://github.com/KaTeX/KaTeX/issues/554
     // 正式なparserが出たらそっちに移行する。
