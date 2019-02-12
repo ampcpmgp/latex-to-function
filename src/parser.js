@@ -424,8 +424,8 @@ class Parser {
 
     const args = this._results
       .slice(0, index)
-      .map(item => item.name)
-      .filter(Boolean)
+      .filter(item => item.type === LeftSide.TYPE.VARIABLE)
+      .reduce((args, item) => args.concat(...item.args), [])
 
     this._curRes(this.initialData({ latex, ignoredVars, args }))
 
