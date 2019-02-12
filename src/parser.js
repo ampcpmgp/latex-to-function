@@ -36,16 +36,12 @@ class Parser {
     return this._results[this._curPos()]
   }
 
-  initialData (option = {}) {
-    const { latex, ignoredVars } = {
-      ...{ latex: '', ignoredVars: [] },
-      ...option
-    }
-
+  initialData ({ latex = '', ignoredVars = [], args = [], type = '' }) {
     return {
       latex,
       ignoredVars,
-      args: [],
+      args,
+      type,
       name: '',
       executions: [''],
       func: () => {
@@ -402,10 +398,11 @@ class Parser {
 
     // 左辺があれば情報設定
     if (hasLeft) {
-      const { name } = LeftSide.info(leftItems)
+      const { name, type } = LeftSide.info(leftItems)
       const result = this._curRes()
 
       result.name = name
+      result.type = type
     }
 
     // 右辺は必ずある想定で設定
@@ -425,7 +422,12 @@ class Parser {
       .map(item => item.name)
       .filter(Boolean)
 
-    this._curRes(this.initialData({ latex, ignoredVars }))
+    const args = this._results
+      .slice(0, index)
+      .map(item => item.name)
+      .filter(Boolean)
+
+    this._curRes(this.initialData({ latex, ignoredVars, args }))
 
     // 参考URL: https://github.com/KaTeX/KaTeX/issues/554
     // 正式なparserが出たらそっちに移行する。
