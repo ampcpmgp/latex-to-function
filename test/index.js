@@ -2,7 +2,7 @@ const SupportedSymbols = require('../src/supported-symbols')
 const { assertLatex, assertLatexes } = require('./util')
 
 // テストコードは上に追加するとデバッグしやすい
-assertLatexes([`f(x) = ± 4x`, `y = ± 5a`, `f'(b) * y`], [3, 2], 68, {
+assertLatexes([`f(x, y) = ± 4xy`, `b = ± 5a`, `f'(c) * b`], [3, 2], 68, {
   allowableRatio: 0.01
 })
 

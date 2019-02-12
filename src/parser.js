@@ -4,6 +4,7 @@ const lodash = require('lodash')
 const { Decimal } = require('decimal.js')
 const Operators = require('./operators')
 const is = require('./is')
+const LeftSide = require('./left-side')
 
 class Parser {
   constructor () {
@@ -360,13 +361,43 @@ class Parser {
     }
   }
 
+  divideItems (items) {
+    const leftItems = []
+    const rightItems = []
+    const hasEqual = items.some(item => is.equal(item))
+
+    if (!hasEqual) {
+      rightItems.push(...items)
+    }
+
+    if (hasEqual) {
+      let isLeft = true
+
+      items.forEach(item => {
+        if (is.equal(item)) {
+          isLeft = false
+          return
+        }
+
+        if (isLeft) leftItems.push(item)
+        else rightItems.push(item)
+      })
+    }
+
+    return {
+      leftItems,
+      rightItems,
+      hasEqual
+    }
+  }
+
   katex (items, depth = 0) {
-    const hasEqaul = items.some(item => is.equal(item))
+    const { leftItems, rightItems } = this.divideItems(items)
 
-    // TODO
-    void hasEqaul
+    console.log('left side info', LeftSide.info(leftItems))
+    // TODO: set left side info to result
 
-    for (let i = 0; i < items.length; i++) {
+    for (let i = 0; i < rightItems.length; i++) {
       const additionalInfo = this.parseKatexItem(i, items, depth)
       i += additionalInfo.skipCount
     }
