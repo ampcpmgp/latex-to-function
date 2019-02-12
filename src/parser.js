@@ -303,6 +303,8 @@ class Parser {
 
     // x^2 等の累乗
     if (item.base.type === 'mathord') {
+      // TODO: べき乗の判定、関数の判定
+
       console.log('---\n\naaaaaaaaaaaaaa', item.sup.body)
       const code = `Math.pow(${item.base.text}, ${item.sup.text})`
 
