@@ -36,7 +36,9 @@ class Parser {
     return this._results[this._curPos()]
   }
 
-  initialData ({ latex = '' }) {
+  initialData (option = {}) {
+    const { latex } = { ...{ latex: '' }, option }
+
     return {
       latex,
       ignoredVars: [],
@@ -100,7 +102,12 @@ class Parser {
     }
   }
 
-  funcStr () {
+  funcStr (option = {}) {
+    const { noSort } = { ...{ noSort: true }, option }
+
+    // TODO
+    void noSort
+
     const result = this._curRes()
 
     if (result.executions.length === 1) {
@@ -230,13 +237,9 @@ class Parser {
     this.addCode(operator)
   }
 
-  getRelatedFormula (
-    currentItem,
-    items,
-    option = {
-      delta: true
-    }
-  ) {
+  getRelatedFormula (currentItem, items, option = {}) {
+    const { delta } = { ...{ delta: true }, option }
+
     const firstIndex = items.indexOf(currentItem) + 1
     const relatedItems = []
     const status = {
@@ -248,7 +251,7 @@ class Parser {
 
     function isEnd (currentItem) {
       if (status.firstParentheses && status.parenthesesCount === 0) return true
-      if (option.delta && is.delta(currentItem)) return true
+      if (delta && is.delta(currentItem)) return true
       if (!status.firstParentheses && is.diffOperators(currentItem)) return true
 
       return false
@@ -422,9 +425,9 @@ class Parser {
   }
 
   latexes (latexes) {
-    this.latex(latexes[0], 0)
-    // const _results = latexes.map((item, i) => this.latex(item, i))
-    // return result
+    latexes.map((item, i) => this.latex(item, i))
+
+    console.log(this._results)
 
     return this._results
   }
