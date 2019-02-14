@@ -1,4 +1,29 @@
 const is = {
+  integral (item) {
+    return item.base.type === 'op' && item.base.name === '\\int'
+  },
+
+  differential (item) {
+    return (
+      item.type === 'supsub' &&
+      item.sup &&
+      item.sup.type === 'ordgroup' &&
+      item.sup.body[0].text === '\\prime' &&
+      !item.sub
+    )
+  },
+
+  exponent (item) {
+    return (
+      item.type === 'supsub' &&
+      item.base &&
+      (item.base.type === 'mathord' || item.base.type === 'textord') &&
+      item.sup &&
+      (item.sup.type === 'mathord' || item.sup.type === 'textord') &&
+      !item.sub
+    )
+  },
+
   equal (item) {
     return item.type === 'atom' && item.text === '='
   },

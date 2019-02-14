@@ -1,8 +1,13 @@
 const SupportedSymbols = require('../src/supported-symbols')
-const { assertLatex, assertLatexes } = require('./util')
+const argv = require('yargs').argv
+const { assertLatex, assertLatexes } = require('./assert')
+
+global.env = {
+  info: argv.info
+}
 
 // テストコードは上に追加するとデバッグしやすい
-assertLatexes([`f(x, y) = ± 4xy`, `b = ± 5a`, `f'(c) * b^2`], [3, 2], 68, {
+assertLatexes([`f(x) = ± 4x`, `b = ± 5a`, `f'(c) * b^2`], [3, 2], 68, {
   allowableRatio: 0.01
 })
 

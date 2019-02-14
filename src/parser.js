@@ -43,6 +43,8 @@ class Parser {
       args,
       type,
       name: '',
+      externalUsage: [],
+      externals: [],
       executions: [''],
       func: () => {
         throw new Error('no set latex')
@@ -101,28 +103,67 @@ class Parser {
     }
   }
 
+  addExternalFunc (funcName, codeFunc) {
+    const result = this._curRes()
+    const isExists = result.externalUsage[0][funcName] != null
+
+    void isExists
+    void result.externalUsage
+  }
+
+  get funcStrOption () {
+    return {
+      noSort: false,
+      noFilter: false
+    }
+  }
+
   funcStr (option = {}) {
-    const { noSort } = { ...{ noSort: true }, ...option }
-
-    // TODO
-    void noSort
-
+    const { noSort, noFilter } = { ...this.funcStrOption, ...option }
     const result = this._curRes()
 
     if (result.executions.length === 1) {
       return `return [${result.executions[0]}]`
     }
 
-    return `return [...new Set([${result.executions.join(
-      ','
-    )}])].sort((a, b) => a - b)`
+    function value () {
+      let execution = `[${result.executions.join(',')}]`
+
+      if (!noFilter) {
+        execution = `[...new Set(${execution})]`
+      }
+
+      if (!noSort) {
+        execution += `.sort((a, b) => a - b)`
+      }
+
+      return execution
+    }
+
+    return `return ${value()}`
   }
 
   attachFuncCode () {
     const result = this._curRes()
 
     // eslint-disable-next-line no-new-func
-    result.func = new Function(...result.args, this.funcStr())
+    result.func = new Function(
+      ...result.args,
+      `
+      ${result.externals.join('\n')}
+
+      ${this.funcStr()}
+    `
+    )
+    // eslint-disable-next-line no-new-func
+    result.rawFunc = new Function(
+      ...result.args,
+      `
+      ${result.externals.join('\n')}
+
+      ${this.funcStr({ noSort: true, noFilter: true })}
+    `
+    )
     result.code = beautify(result.func.toString())
   }
 
@@ -149,6 +190,13 @@ class Parser {
   parseKatexItem (index, items, depth) {
     const item = items[index]
     const prevItem = items[index - 1]
+
+    // 機能追加時に以下のログを有効にし確認する
+    global.env.info &&
+      console.info(
+        `--------------- katex item[${this._curPos()}] ---------------\n`,
+        Object.assign({}, item, { loc: undefined })
+      )
 
     let additionalInfo = {
       skipCount: 0
@@ -185,32 +233,31 @@ class Parser {
 
     if (item.type === 'genfrac') {
       this.addCode('(')
-      this.setKatexData(item.numer.body, depth + 1)
+      this.katex(item.numer.body, depth + 1)
       this.addCode(')/')
       this.addCode('(')
-      this.setKatexData(item.denom.body, depth + 1)
+      this.katex(item.denom.body, depth + 1)
       this.addCode(')')
     }
 
     if (item.type === 'sqrt') {
       this.addCode('Math.sqrt(')
-      this.setKatexData(item.body.body, depth + 1) // type is ordgroup
+      this.katex(item.body.body, depth + 1) // type is ordgroup
       this.addCode(')')
     }
 
     if (item.type === 'styling') {
-      this.setKatexData(item.body, depth + 1)
+      this.katex(item.body, depth + 1)
     }
 
     // 機能追加時に以下のログを有効にし確認する
-    console.info(
-      `--------------------------------------------------------\n`,
-      Object.assign({}, item, { loc: undefined }),
-      '\n\n',
-      `depth: ${depth}\n`,
-      `args: ${this._curRes().args}\n\n`,
-      `executions: ${this._curRes().executions[0]}\n`
-    )
+    global.env.info &&
+      console.info(
+        `\ndepth: ${depth}\n`,
+        `args: ${this._curRes().args}\n\n`,
+        `executions.length: ${this._curRes().executions.length}\n`,
+        `executions[0]: ${this._curRes().executions[0]}\n`
+      )
 
     return additionalInfo
   }
@@ -236,8 +283,14 @@ class Parser {
     this.addCode(operator)
   }
 
-  getRelatedFormula (currentItem, items, option = {}) {
-    const { delta } = { ...{ delta: true }, ...option }
+  get relatedFormulaOption () {
+    return {
+      delta: true
+    }
+  }
+
+  getRelatedFormula (currentItem, items, option = this.relatedFormulaOption) {
+    const { delta } = { ...this.relatedFormulaOption, ...option }
 
     const firstIndex = items.indexOf(currentItem) + 1
     const relatedItems = []
@@ -295,31 +348,46 @@ class Parser {
 
   addSubsupInfo (item, items, depth) {
     // 3^4 等の累乗
-    if (item.base.type === 'textord') {
+    if (item.base.type === 'textord' && is.exponent(item)) {
       const code = `Math.pow(${item.base.text}, ${item.sup.text})`
 
       this.addCode(code)
     }
 
     // x^2 等の累乗
-    if (item.base.type === 'mathord') {
-      // TODO: べき乗の判定、関数の判定
-
-      console.log('---\n\naaaaaaaaaaaaaa', item.sup.body)
+    if (item.base.type === 'mathord' && is.exponent(item)) {
       const code = `Math.pow(${item.base.text}, ${item.sup.text})`
 
       this.addArg(item.base.text)
       this.addCode(code)
     }
 
+    // 微分
+    if (is.differential(item)) {
+      const delta = 1e-10 // min value: 1e-15
+      const funcName = item.base.text
+      const { relatedItemLength, relatedItems } = this.getRelatedFormula(
+        item,
+        items
+      )
+
+      // add function
+      this.addCode(`(${funcName}(`)
+      this.katex(relatedItems, depth + 1)
+      this.addCode(`+ ${delta})[${0}] - `) // TODO
+      this.addCode(`${funcName}(`)
+      this.katex(relatedItems, depth + 1)
+      this.addCode(`)[${0}] / ${delta})`) // TODO
+
+      return relatedItemLength
+    }
+
     // 積分
-    if (item.base.type === 'op' && item.base.name === '\\int') {
-      const deltaDivisionNum = 100
+    if (is.integral(item)) {
+      const delta = 100
       const beginningValue = item.sub.text - 0
       const endValue = item.sup.text - 0
-      const decimal = new Decimal(endValue)
-        .minus(beginningValue)
-        .div(deltaDivisionNum)
+      const decimal = new Decimal(endValue).minus(beginningValue).div(delta)
       const deltaWidth = decimal.toNumber()
 
       const {
@@ -330,7 +398,7 @@ class Parser {
 
       const varName = deltaVarName || 'x'
       const prefixCode = `Array.from(
-        {length: ${deltaDivisionNum}},
+        {length: ${delta}},
         (_, __i) => ${beginningValue} + ${deltaWidth} * __i
       ).reduce((__sum${depth}, ${varName}) => __sum${depth} + ${deltaWidth} * `
 
@@ -338,7 +406,7 @@ class Parser {
 
       this.addIgnoredVar(varName)
       this.addCode(prefixCode)
-      this.setKatexData(relatedItems, depth + 1)
+      this.katex(relatedItems, depth + 1)
       this.addCode(suffixCode)
 
       return relatedItemLength
@@ -359,10 +427,31 @@ class Parser {
       this.addIgnoredVar(beginningVar)
       this.addArg(endVar)
       this.addCode(prefixCode)
-      this.setKatexData(relatedItems, depth + 1)
+      this.katex(relatedItems, depth + 1)
       this.addCode(suffixCode)
 
       return relatedItems.length
+    }
+  }
+
+  presetEternalItems (index) {
+    const curPos = this._curPos()
+    const curRes = this._curRes()
+
+    for (let index = 0; index < curPos; index++) {
+      const result = this._results[index]
+
+      if (result.type === LeftSide.TYPE.FUNCTION) {
+        curRes.externals.push(
+          `const ${result.name} = ${result.rawFunc.toString()}`
+        )
+      }
+
+      if (result.type === LeftSide.TYPE.VARIABLE) {
+        curRes.externals.push(
+          `const ${result.name} = [${result.executions.join(',')}]`
+        )
+      }
     }
   }
 
@@ -413,8 +502,6 @@ class Parser {
       const additionalInfo = this.parseKatexItem(i, rightItems, depth)
       i += additionalInfo.skipCount
     }
-
-    this.attachFuncCode()
   }
 
   latex (latex, index = 0) {
@@ -431,17 +518,22 @@ class Parser {
       .reduce((args, item) => args.concat(...item.args), [])
 
     this._curRes(this.initialData({ latex, ignoredVars, args }))
+    this.presetEternalItems()
 
     // 参考URL: https://github.com/KaTeX/KaTeX/issues/554
     // 正式なparserが出たらそっちに移行する。
     const items = katex.__parse(latex)
     this.katex(items)
+
+    this.attachFuncCode()
   }
 
   latexes (latexes) {
-    latexes.map((item, i) => this.latex(item, i))
+    latexes.map((item, i) => {
+      this.latex(item, i)
+    })
 
-    console.log(this._results)
+    global.env.info && console.info('--- results ---\n', this._results)
 
     return this._results
   }

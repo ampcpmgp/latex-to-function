@@ -48,7 +48,7 @@ ${parser.code}
 exports.assertLatex = assertLatex
 
 function assertLatexes (
-  latex,
+  latexes,
   vars,
   expected,
   option = {
@@ -56,7 +56,7 @@ function assertLatexes (
   }
 ) {
   const parser = new Parser()
-  const results = parser.latexes(latex)
+  const results = parser.latexes(latexes)
   const lastResult = results[results.length - 1]
 
   const values = lastResult.func(...vars)
@@ -69,14 +69,15 @@ function assertLatexes (
 
   if (!condition()) {
     const msg = `
-Latex: ${latex}
-${[parser.args]}: ${vars}
+Latex: ${latexes.join('\n')}
+
+args(${[lastResult.args]}): ${vars}
 expected: ${expected} ${
   option.allowableRatio ? `(± ${option.allowableRatio * 100}%)` : ''
 }
 but values: ${values}
 
-${parser.code}
+${lastResult.code}
 `
     throw new Error(msg)
   }
