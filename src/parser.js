@@ -78,7 +78,7 @@ class Parser {
     result.args.push(variable)
   }
 
-  addIgnoredVar (variable) {
+  addIgnoredArg (variable) {
     const result = this._curRes()
     const isExistsArg = result.ignoredVars.some(
       ignoredVar => ignoredVar === variable
@@ -458,7 +458,7 @@ class Parser {
 
       const suffixCode = `, 0)`
 
-      this.addIgnoredVar(varName)
+      this.addIgnoredArg(varName)
       this.addCode(prefixCode)
       this.katex(relatedItems, depth + 1)
       this.addCode(suffixCode)
@@ -478,7 +478,7 @@ class Parser {
       const suffixCode = `, 0)`
       const { relatedItems } = this.getRelatedFormula(item, items)
 
-      this.addIgnoredVar(beginningVar)
+      this.addIgnoredArg(beginningVar)
       this.addArg(endVar)
       this.addCode(prefixCode)
       this.katex(relatedItems, depth + 1)
