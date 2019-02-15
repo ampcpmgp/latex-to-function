@@ -1,5 +1,5 @@
 const lodash = require('lodash')
-const { Parser } = require('../src')
+const { parse } = require('../src')
 
 function isAllowableRange (values, expected, ratio) {
   return values.every((value, i) => {
@@ -39,8 +39,7 @@ function assertLatex (
     allowableRatio: 0
   }
 ) {
-  const parser = new Parser()
-  const result = parser.latex(latex)
+  const result = parse(latex)
   const values = result.func(...vars)
 
   function condition () {
@@ -53,12 +52,12 @@ function assertLatex (
     throw new Error(
       errorMsg({
         latex,
-        args: parser.args,
+        args: result.args,
         vars,
         expected,
         option,
         values,
-        code: parser.code
+        code: result.code
       })
     )
   }
@@ -74,8 +73,7 @@ function assertLatexes (
     allowableRatio: 0
   }
 ) {
-  const parser = new Parser()
-  const results = parser.latexes(latexes)
+  const results = parse(latexes)
   const lastResult = results[results.length - 1]
 
   const values = lastResult.func(...vars)
