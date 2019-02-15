@@ -251,12 +251,14 @@ class Parser {
     }
 
     if (is.function(item)) {
-      this.addCode(item.text)
+      // TODO: 未対応
+      // this.addCode(item.text)
+      console.warn('TODO: function support')
     }
 
     if (is.variable(item)) {
       this.addArg(item.text)
-      this.addCode(item.text)
+      this.addVariable(item.text)
     }
 
     if (item.type === 'atom') {
@@ -317,6 +319,18 @@ class Parser {
     }
 
     this.addCode(operator)
+  }
+
+  addVariable (variable) {
+    const variableResult = this._getResultByName(variable)
+
+    if (variableResult) {
+      this.setExternalResultIndex(variable, i => `${variable}[${i}]`)
+    }
+
+    if (!variableResult) {
+      this.addCode(variable)
+    }
   }
 
   get relatedFormulaOption () {
@@ -396,10 +410,10 @@ class Parser {
 
     // x^2 等の累乗
     if (item.base.type === 'mathord' && is.exponent(item)) {
-      const code = `Math.pow(${item.base.text}, ${item.sup.text})`
-
       this.addArg(item.base.text)
-      this.addCode(code)
+      this.addCode(`Math.pow(`)
+      this.addVariable(item.base.text)
+      this.addCode(`, ${item.sup.text})`)
     }
 
     // 微分
@@ -412,12 +426,12 @@ class Parser {
       )
 
       // add function
-      this.addCode(`(${funcName}(`)
+      this.addCode(`((${funcName}(`)
       this.katex(relatedItems, depth + 1)
       this.setExternalResultIndex(funcName, i => `+ ${delta})[${i}] - `)
       this.addCode(`${funcName}(`)
       this.katex(relatedItems, depth + 1)
-      this.setExternalResultIndex(funcName, i => `)[${i}] / ${delta})`)
+      this.setExternalResultIndex(funcName, i => `)[${i}]) / ${delta})`)
 
       return relatedItemLength
     }
@@ -566,6 +580,8 @@ class Parser {
     this.katex(items)
 
     this.attachFuncCode()
+
+    return this._curRes()
   }
 
   latexes (latexes) {

@@ -7,8 +7,8 @@ global.env = {
 }
 
 // テストコードは上に追加するとデバッグしやすい
-assertLatexes([`f(x) = ± 4x`, `b = ± 5a`, `f'(c) * b^2`], [3, 2], 68, {
-  allowableRatio: 0.01
+assertLatexes([`f(x) = ± 4x^2`, `b = ± 5a`, `f'(c) * b`], [3, 2], [-240, 240], {
+  allowableRatio: 0.0001
 })
 
 assertLatex('\\int_2^4 4x + \\sum_{i=0}^n (ia^2 + 5)', [3, 2], [68], {
