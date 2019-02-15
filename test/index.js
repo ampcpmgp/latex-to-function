@@ -46,6 +46,8 @@ assertLatex(
 )
 
 for (let symbol of SupportedSymbols) {
+  if (!symbol.test) continue
+
   const option = {
     allowableRatio: symbol.test.allowableRatio || 0
   }

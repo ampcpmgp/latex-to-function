@@ -90,5 +90,10 @@ module.exports = [
       result: [18.667],
       allowableRatio: 0.01
     }
+  },
+  {
+    text: "f'",
+    latex: "f'(a)",
+    description: 'This is an approximation. The difference is 1e-10.'
   }
 ]

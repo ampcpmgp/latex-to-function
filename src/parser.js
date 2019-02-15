@@ -7,6 +7,7 @@ const is = require('./is')
 const LeftSide = require('./left-side')
 
 function info (...msg) {
+  // デバッグ時など `npm test -- --info` と入力しログ出力する
   if (global && global.env && global.env.info) {
     console.info(...msg)
   }
@@ -115,12 +116,12 @@ class Parser {
       result.externalUsage[0] && result.externalUsage[0][name] != null
 
     if (!isSet) {
-      const targetReesult = this._getResultByName(name)
+      const targetResult = this._getResultByName(name)
 
       {
         let internalIndex = 0
 
-        Array.from({ length: targetReesult.executions.length }).forEach(
+        Array.from({ length: targetResult.executions.length }).forEach(
           (_, i) => {
             Array.from({ length: result.executions.length }).forEach((_, j) => {
               const usage = (result.externalUsage[internalIndex] =
@@ -135,7 +136,7 @@ class Parser {
       }
 
       this.addExecutions(
-        Array.from({ length: targetReesult.executions.length }).map((_, i) =>
+        Array.from({ length: targetResult.executions.length }).map((_, i) =>
           codeFunc(i)
         )
       )
@@ -210,14 +211,14 @@ class Parser {
   isSkipMultiplier (currentItem, prevItem) {
     if (!prevItem) return false
 
-    // 2連続数値扱いのデータが来た場合
+    // 2連続数値扱いのデータが来た場合はfalse
     const isContinuousNumericalItem =
       is.numericValue(currentItem) && is.numericValue(prevItem)
     if (isContinuousNumericalItem) return false
 
     if (is.sigma(prevItem)) return false
 
-    // `(` で始まっているか、 `)` で終わっている場合
+    // 前回が `(` で始まっているか、 今回が `)` で終わっている場合はfalse
     if (is.open(prevItem) || is.close(currentItem)) return false
 
     const isCurrentArithmetic = is.arithmetic(currentItem)
@@ -230,7 +231,6 @@ class Parser {
     const item = items[index]
     const prevItem = items[index - 1]
 
-    // 機能追加時に以下のログを有効にし確認する
     info(
       `--------------- katex item[${this._curPos()}] ---------------\n`,
       Object.assign({}, item, { loc: undefined })
