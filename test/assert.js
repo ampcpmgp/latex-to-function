@@ -11,6 +11,25 @@ function isAllowableRange (values, expected, ratio) {
   })
 }
 
+function errorMsg ({ latex, args, vars, expected, option, values, code }) {
+  return `
+
+Latex:
+  ${latex}
+
+args (${[args]}): ${vars}
+
+expected: ${expected} ${
+  option.allowableRatio ? `(± ${option.allowableRatio * 100}%)` : ''
+}
+
+but values: ${values}
+
+------ generated code ------
+${code}
+`
+}
+
 function assertLatex (
   latex,
   vars,
@@ -31,17 +50,17 @@ function assertLatex (
   }
 
   if (!condition()) {
-    const msg = `
-Latex: ${latex}
-${[parser.args]}: ${vars}
-expected: ${expected} ${
-  option.allowableRatio ? `(± ${option.allowableRatio * 100}%)` : ''
-}
-but values: ${values}
-
-${parser.code}
-`
-    throw new Error(msg)
+    throw new Error(
+      errorMsg({
+        latex,
+        args: parser.args,
+        vars,
+        expected,
+        option,
+        values,
+        code: parser.code
+      })
+    )
   }
 }
 
@@ -68,18 +87,17 @@ function assertLatexes (
   }
 
   if (!condition()) {
-    const msg = `
-Latex: ${latexes.join('\n')}
-
-args(${[lastResult.args]}): ${vars}
-expected: ${expected} ${
-  option.allowableRatio ? `(± ${option.allowableRatio * 100}%)` : ''
-}
-but values: ${values}
-
-${lastResult.code}
-`
-    throw new Error(msg)
+    throw new Error(
+      errorMsg({
+        latex: latexes.join('\n  '),
+        args: lastResult.args,
+        vars,
+        expected,
+        option,
+        values,
+        code: lastResult.code
+      })
+    )
   }
 }
 

@@ -6,6 +6,12 @@ const Operators = require('./operators')
 const is = require('./is')
 const LeftSide = require('./left-side')
 
+function info (...msg) {
+  if (global && global.env && global.env.info) {
+    console.info(...msg)
+  }
+}
+
 class Parser {
   constructor () {
     this._results = []
@@ -103,12 +109,45 @@ class Parser {
     }
   }
 
-  addExternalFunc (funcName, codeFunc) {
+  setExternalResultIndex (name, codeFunc) {
     const result = this._curRes()
-    const isExists = result.externalUsage[0][funcName] != null
+    const isSet =
+      result.externalUsage[0] && result.externalUsage[0][name] != null
 
-    void isExists
-    void result.externalUsage
+    if (!isSet) {
+      const targetReesult = this._getResultByName(name)
+
+      {
+        let internalIndex = 0
+
+        Array.from({ length: targetReesult.executions.length }).forEach(
+          (_, i) => {
+            Array.from({ length: result.executions.length }).forEach((_, j) => {
+              const usage = (result.externalUsage[internalIndex] =
+                result.externalUsage[internalIndex] || {})
+
+              usage[name] = i
+
+              ++internalIndex
+            })
+          }
+        )
+      }
+
+      this.addExecutions(
+        Array.from({ length: targetReesult.executions.length }).map((_, i) =>
+          codeFunc(i)
+        )
+      )
+    }
+
+    if (isSet) {
+      result.externalUsage.forEach((item, i) => {
+        const usageIndex = item[name]
+
+        result.executions[i] += codeFunc(usageIndex)
+      })
+    }
   }
 
   get funcStrOption () {
@@ -192,11 +231,10 @@ class Parser {
     const prevItem = items[index - 1]
 
     // 機能追加時に以下のログを有効にし確認する
-    global.env.info &&
-      console.info(
-        `--------------- katex item[${this._curPos()}] ---------------\n`,
-        Object.assign({}, item, { loc: undefined })
-      )
+    info(
+      `--------------- katex item[${this._curPos()}] ---------------\n`,
+      Object.assign({}, item, { loc: undefined })
+    )
 
     let additionalInfo = {
       skipCount: 0
@@ -250,14 +288,12 @@ class Parser {
       this.katex(item.body, depth + 1)
     }
 
-    // 機能追加時に以下のログを有効にし確認する
-    global.env.info &&
-      console.info(
-        `\ndepth: ${depth}\n`,
-        `args: ${this._curRes().args}\n\n`,
-        `executions.length: ${this._curRes().executions.length}\n`,
-        `executions[0]: ${this._curRes().executions[0]}\n`
-      )
+    info(
+      `\ndepth: ${depth}\n`,
+      `args: ${this._curRes().args}\n\n`,
+      `executions.length: ${this._curRes().executions.length}\n`,
+      `executions[0]: ${this._curRes().executions[0]}\n`
+    )
 
     return additionalInfo
   }
@@ -346,6 +382,10 @@ class Parser {
     }
   }
 
+  _getResultByName (name) {
+    return this._results.find(item => name === item.name)
+  }
+
   addSubsupInfo (item, items, depth) {
     // 3^4 等の累乗
     if (item.base.type === 'textord' && is.exponent(item)) {
@@ -374,10 +414,10 @@ class Parser {
       // add function
       this.addCode(`(${funcName}(`)
       this.katex(relatedItems, depth + 1)
-      this.addCode(`+ ${delta})[${0}] - `) // TODO
+      this.setExternalResultIndex(funcName, i => `+ ${delta})[${i}] - `)
       this.addCode(`${funcName}(`)
       this.katex(relatedItems, depth + 1)
-      this.addCode(`)[${0}] / ${delta})`) // TODO
+      this.setExternalResultIndex(funcName, i => `)[${i}] / ${delta})`)
 
       return relatedItemLength
     }
@@ -533,7 +573,7 @@ class Parser {
       this.latex(item, i)
     })
 
-    global.env.info && console.info('--- results ---\n', this._results)
+    info('--- results ---\n', this._results)
 
     return this._results
   }
