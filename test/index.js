@@ -9,9 +9,7 @@ global.env = {
 // テストコードは上に追加するとデバッグしやすい
 assertLatex('|-1|(-2)|-3|', [], [-6])
 assertLatex('|-1|-2|-3|', [], [-5])
-assertLatex('\\pm \\sqrt {1000 - x^2} + \\sqrt{40|x|}', [10], [-10, 50], {
-  allowableRatio: 0.0001
-})
+assertLatex('\\pm \\sqrt {1000 - x^2} + \\sqrt{40|x|}', [10], [-10, 50])
 
 assertLatexes([`f(x) = ± 4x^2`, `b = ± 5a`, `f'(c) * b`], [3, 2], [-240, 240], {
   allowableRatio: 0.0001
