@@ -57,6 +57,14 @@ module.exports = [
     }
   },
   {
+    text: '| |',
+    latex: '| x |',
+    test: {
+      args: [-3],
+      result: [3]
+    }
+  },
+  {
     text: '\\frac',
     latex: '\\frac{x}{5}',
     test: {
