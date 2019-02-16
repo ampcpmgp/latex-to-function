@@ -245,9 +245,11 @@ class Parser {
       this.addCode('*')
     }
 
-    // type ごとに関数コードを生成ロジックを用意する
+    // type ごとに関数コードの生成ロジックを用意する
     if (item.type === 'textord') {
-      this.addCode(item.text)
+      const skipCount = this.addTextord(item, items, depth)
+
+      if (skipCount) additionalInfo.skipCount += skipCount
     }
 
     if (is.function(item)) {
@@ -262,11 +264,11 @@ class Parser {
     }
 
     if (item.type === 'atom') {
-      this.addAtomInfo(item)
+      this.addAtom(item)
     }
 
     if (item.type === 'supsub') {
-      const skipCount = this.addSubsupInfo(item, items, depth)
+      const skipCount = this.addSubsup(item, items, depth)
 
       if (skipCount) additionalInfo.skipCount += skipCount
     }
@@ -300,7 +302,36 @@ class Parser {
     return additionalInfo
   }
 
-  addAtomInfo (item) {
+  addTextord (item, items, depth) {
+    if (is.abs(item)) {
+      const relatedItemsLength = this.addAbs(item, items, depth)
+
+      return relatedItemsLength
+    }
+
+    this.addCode(item.text)
+  }
+
+  addAbs (currentItem, items, depth) {
+    const firstIndex = items.indexOf(currentItem) + 1
+    const relatedItems = []
+
+    this.addCode(`Math.abs(`)
+
+    for (let index = firstIndex; index < items.length; index++) {
+      const item = items[index]
+
+      if (is.abs(item)) break
+
+      relatedItems.push(item)
+    }
+    this.katex(relatedItems, depth + 1)
+    this.addCode(`)`)
+
+    return relatedItems.length + 1
+  }
+
+  addAtom (item) {
     const operator = Operators[item.text]
 
     if (!operator) {
@@ -400,7 +431,7 @@ class Parser {
     return this._results.find(item => name === item.name)
   }
 
-  addSubsupInfo (item, items, depth) {
+  addSubsup (item, items, depth) {
     // 3^4 等の累乗
     if (item.base.type === 'textord' && is.exponent(item)) {
       const code = `Math.pow(${item.base.text}, ${item.sup.text})`

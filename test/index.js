@@ -7,6 +7,12 @@ global.env = {
 }
 
 // テストコードは上に追加するとデバッグしやすい
+assertLatex('|-1|(-2)|-3|', [], [-6])
+assertLatex('|-1|-2|-3|', [], [-5])
+assertLatex('\\sqrt {(1) - x^2} + \\sqrt{|x|}', [0.5], [-240, 240], {
+  allowableRatio: 0.0001
+})
+
 assertLatexes([`f(x) = ± 4x^2`, `b = ± 5a`, `f'(c) * b`], [3, 2], [-240, 240], {
   allowableRatio: 0.0001
 })
