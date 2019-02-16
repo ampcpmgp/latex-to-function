@@ -328,6 +328,7 @@ class Parser {
     this.katex(relatedItems, depth + 1)
     this.addCode(`)`)
 
+    // 最後の `|` に当たる部分を `)` で代入しているため、１を追加する。
     return relatedItems.length + 1
   }
 
