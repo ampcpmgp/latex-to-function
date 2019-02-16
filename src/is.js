@@ -84,7 +84,7 @@ const is = {
   },
 
   numericValue (item) {
-    return item.type === 'textord' && !is.abs(item)
+    return item.type === 'textord' && !!/\d/.test(item.text)
   }
 }
 
