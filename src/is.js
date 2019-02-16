@@ -1,4 +1,8 @@
 const is = {
+  abs (item) {
+    return item.type === 'textord' && item.text === '|'
+  },
+
   integral (item) {
     return item.base.type === 'op' && item.base.name === '\\int'
   },
@@ -80,7 +84,7 @@ const is = {
   },
 
   numericValue (item) {
-    return item.type === 'textord'
+    return item.type === 'textord' && !!/\d/.test(item.text)
   }
 }
 
