@@ -1,10 +1,39 @@
 const is = {
+  sin (item) {
+    return item.type === 'op' && item.name === '\\sin'
+  },
+
+  cos (item) {
+    return item.type === 'op' && item.name === '\\cos'
+  },
+
+  tan (item) {
+    return item.type === 'op' && item.name === '\\tan'
+  },
+
   abs (item) {
     return item.type === 'textord' && item.text === '|'
   },
 
   integral (item) {
     return item.base.type === 'op' && item.base.name === '\\int'
+  },
+
+  // supsub系
+  angle (item) {
+    return (
+      item.type === 'supsub' &&
+      item.base.type === 'textord' &&
+      item.sup.text === '\\circ'
+    )
+  },
+
+  sigma (item) {
+    return (
+      item.type === 'supsub' &&
+      item.base.type === 'op' &&
+      item.base.name === '\\sum'
+    )
   },
 
   differential (item) {
@@ -75,16 +104,12 @@ const is = {
     return false
   },
 
-  sigma (item) {
-    return (
-      item.type === 'supsub' &&
-      item.base.type === 'op' &&
-      item.base.name === '\\sum'
-    )
-  },
-
   numericValue (item) {
     return item.type === 'textord' && !!/\d/.test(item.text)
+  },
+
+  isVarOrNum (item) {
+    return is.variable(item) || is.function(item) || is.numericValue(item)
   }
 }
 

@@ -1,8 +1,10 @@
 const Parser = require('./parser')
+const LeftSide = require('./left-side')
 const SupportedSymbols = require('./supported-symbols')
 
 module.exports = {
   Parser,
+  LeftSide,
   SupportedSymbols,
 
   parse (latex) {

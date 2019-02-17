@@ -1,6 +1,6 @@
 {
   "name": "latex-to-function",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "",
   "main": "src/index.js",
   "files": [
@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "test": "node ./test",
+    "test:info": "node ./test --info",
     "precommit": "lint-staged",
     "dist": "parcel build ./src/index.js --out-dir ./dist"
   },
