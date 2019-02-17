@@ -213,7 +213,9 @@ class Parser {
 
     // 2連続数値扱いのデータが来た場合はfalse
     const isContinuousNumericalItem =
-      is.numericValue(currentItem) && is.numericValue(prevItem)
+      is.numericValue(prevItem) &&
+      (is.numericValue(currentItem) || is.angle(currentItem))
+
     if (isContinuousNumericalItem) return false
 
     if (is.sigma(prevItem)) return false
@@ -227,7 +229,7 @@ class Parser {
     return !isCurrentArithmetic && !isPrevArithmetic
   }
 
-  parseKatexItem (index, items, depth) {
+  parse (index, items, depth) {
     const item = items[index]
     const prevItem = items[index - 1]
 
@@ -246,21 +248,20 @@ class Parser {
     }
 
     // type ごとに関数コードの生成ロジックを用意する
+    if (item.type === 'op') {
+      const skipCount = this.addOp(item, items, depth)
+
+      if (skipCount) additionalInfo.skipCount += skipCount
+    }
+
     if (item.type === 'textord') {
       const skipCount = this.addTextord(item, items, depth)
 
       if (skipCount) additionalInfo.skipCount += skipCount
     }
 
-    if (is.function(item)) {
-      // TODO: 未対応
-      // this.addCode(item.text)
-      console.warn('TODO: function support')
-    }
-
-    if (is.variable(item)) {
-      this.addArg(item.text)
-      this.addVariable(item.text)
+    if (item.type === 'mathord') {
+      this.addMathord(item)
     }
 
     if (item.type === 'atom') {
@@ -300,6 +301,60 @@ class Parser {
     )
 
     return additionalInfo
+  }
+
+  addOp (item, items, depth) {
+    if (is.sin(item)) {
+      const { relatedItemLength, relatedItems } = this.getRelatedFormula(
+        item,
+        items
+      )
+
+      this.addCode('Math.sin(')
+      this.katex(relatedItems, depth + 1)
+      this.addCode(')')
+
+      return relatedItemLength
+    }
+
+    if (is.cos(item)) {
+      const { relatedItemLength, relatedItems } = this.getRelatedFormula(
+        item,
+        items
+      )
+
+      this.addCode('Math.cos(')
+      this.katex(relatedItems, depth + 1)
+      this.addCode(')')
+
+      return relatedItemLength
+    }
+
+    if (is.tan(item)) {
+      const { relatedItemLength, relatedItems } = this.getRelatedFormula(
+        item,
+        items
+      )
+
+      this.addCode('Math.tan(')
+      this.katex(relatedItems, depth + 1)
+      this.addCode(')')
+
+      return relatedItemLength
+    }
+  }
+
+  addMathord (item) {
+    if (is.function(item)) {
+      // TODO: 未対応
+      // this.addCode(item.text)
+      console.warn('TODO: function support')
+    }
+
+    if (is.variable(item)) {
+      this.addArg(item.text)
+      this.addVariable(item.text)
+    }
   }
 
   addTextord (item, items, depth) {
@@ -433,6 +488,10 @@ class Parser {
   }
 
   addSubsup (item, items, depth) {
+    if (is.angle(item)) {
+      this.addCode(item.base.text)
+    }
+
     // 3^4 等の累乗
     if (item.base.type === 'textord' && is.exponent(item)) {
       const code = `Math.pow(${item.base.text}, ${item.sup.text})`
@@ -585,7 +644,7 @@ class Parser {
 
     // 右辺は必ずある想定で設定
     for (let i = 0; i < rightItems.length; i++) {
-      const additionalInfo = this.parseKatexItem(i, rightItems, depth)
+      const additionalInfo = this.parse(i, rightItems, depth)
       i += additionalInfo.skipCount
     }
   }

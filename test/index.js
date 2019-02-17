@@ -7,6 +7,10 @@ global.env = {
 }
 
 // テストコードは上に追加するとデバッグしやすい
+assertLatex('\\sin x', [55], [Math.sin(55)])
+assertLatex('\\cos x', [55], [Math.cos(55)])
+assertLatex('\\tan 55^\\circ', [], [Math.tan(55)])
+
 assertLatex('|-1|(-2)|-3|', [], [-6])
 assertLatex('|-1|-2|-3|', [], [-5])
 assertLatex('\\pm \\sqrt {1000 - x^2} + \\sqrt{40|x|}', [10], [-10, 50])
