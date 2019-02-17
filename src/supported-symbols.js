@@ -89,6 +89,21 @@ module.exports = [
     }
   },
   {
+    text: '\\sin',
+    latex: '\\sin x',
+    description: ''
+  },
+  {
+    text: '\\cos',
+    latex: '\\cos x',
+    description: ''
+  },
+  {
+    text: '\\tan',
+    latex: '\\tan x',
+    description: ''
+  },
+  {
     text: '\\int',
     latex: '\\int_2^4 x^2',
     description:
