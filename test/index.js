@@ -7,7 +7,9 @@ global.env = {
 }
 
 // テストコードは上に追加するとデバッグしやすい
-assertLatex('\\sin x', [55], [Math.sin(55)])
+// assertLatexes(['f(x) = x^2', `y = f(a)`], [10], [20])
+
+assertLatex('\\sin x / 10', [55], [Math.sin(55) / 10])
 assertLatex('\\cos x', [55], [Math.cos(55)])
 assertLatex('\\tan 55^\\circ', [], [Math.tan(55)])
 
