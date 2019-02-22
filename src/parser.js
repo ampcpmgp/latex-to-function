@@ -312,7 +312,7 @@ class Parser {
 
       this.addCode('Math.sin(')
       this.katex(relatedItems, depth + 1)
-      this.addCode(')')
+      this.addCode(' * (Math.PI / 180))')
 
       return relatedItemLength
     }
@@ -325,7 +325,7 @@ class Parser {
 
       this.addCode('Math.cos(')
       this.katex(relatedItems, depth + 1)
-      this.addCode(')')
+      this.addCode(' * (Math.PI / 180))')
 
       return relatedItemLength
     }
@@ -338,7 +338,7 @@ class Parser {
 
       this.addCode('Math.tan(')
       this.katex(relatedItems, depth + 1)
-      this.addCode(')')
+      this.addCode(' * (Math.PI / 180))')
 
       return relatedItemLength
     }
