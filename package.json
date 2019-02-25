@@ -13,6 +13,7 @@
     "test": "node ./test",
     "test:info": "node ./test --info",
     "precommit": "lint-staged",
+    "publish:patch": "npm version patch && npm run dist && npm run publish",
     "dist": "parcel build ./src/index.js --out-dir ./dist"
   },
   "repository": {
