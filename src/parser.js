@@ -220,6 +220,8 @@ class Parser {
 
     if (is.sigma(prevItem)) return false
 
+    if (is.decimalSeparator(prevItem) || is.decimalSeparator(currentItem)) { return false }
+
     // 前回が `(` で始まっているか、 今回が `)` で終わっている場合はfalse
     if (is.open(prevItem) || is.close(currentItem)) return false
 
