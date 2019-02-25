@@ -108,6 +108,10 @@ const is = {
     return item.type === 'textord' && !!/\d/.test(item.text)
   },
 
+  decimalSeparator (item) {
+    return item.type === 'textord' && item.text === '.'
+  },
+
   isVarOrNum (item) {
     return is.variable(item) || is.function(item) || is.numericValue(item)
   }
